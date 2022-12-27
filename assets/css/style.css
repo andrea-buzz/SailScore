@@ -6,6 +6,11 @@ body, html {
   background-color: #fff;
   color: #24292f;
 }
+body {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
 a {
   color:#0969da;
 }
@@ -22,6 +27,7 @@ a {
   background-color: #24292f;
 }
 div[data-list="competitors"] {
+  flex-grow: 1;
   display: flex;
   flex-direction: column;
 }
@@ -32,6 +38,7 @@ div[data-list="competitors"] {
 }
 .competitor[data-status="started"] {
   order: 1000;
+  transition: .3s order;
 }
 .competitor span {
   flex-basis: 20%;
