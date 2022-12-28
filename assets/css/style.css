@@ -31,24 +31,95 @@ div[data-list="competitors"] {
   display: flex;
   flex-direction: column;
 }
-.competitor {
-  margin-bottom: 10px;
+div[data-list="competitors"] .competitor {
+  margin-bottom: 15px;
   display: flex;
   justify-content: space-between;
 }
-.competitor[data-status="started"] {
+div[data-list="competitors"] .competitor[data-status="started"] {
   order: 1000;
   transition: .3s order;
 }
-.competitor span {
-  flex-basis: 20%;
+div[data-list="competitors"] .competitor span {
+  flex-basis: 12%;
 }
-.competitor button {
+div[data-list="competitors"] .competitor span.crew{
+  flex-basis: 40%;
+}
+button[data-role] {
+  min-width: 36px;
+  min-height: 36px;
+}
+div[data-list="competitors"] .competitor button {
   width: 36px;
+}
+div[data-list="sailors"] .sailor {
+  display: flex;
+  margin-bottom: 15px;
+}
+div[data-list="sailors"] .sailor span {
+  flex-basis: 30%;
+}
+.field-group {
+  margin-bottom: 15px;
+  display: flex;
+  justify-content: space-between;
+  column-gap: 20px;
+}
+.field-group label {
+  flex-basis: 40%;
+}
+.field-group input, .field-group select {
+  font-size: 1.1rem;
+  flex-basis: 60%;
+}
+.field-group input[type="date"] {
+  width: 100%; 
+}
+.popup-fixed {
+  position: fixed;
+  z-index: 3;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background-color: rgba(0, 0, 0, .2);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 30px;
+}
+.popup-fixed .popup-content {
+  background-color: #fff;
+  padding: 15px;
+}
+.popup-fixed .popup-header {
+  display: flex;
+  justify-content: flex-end;
+  background-color: #333;
+}
+
+.popup-fixed .popup-header > .btn-close{
+  position: relative;
+  display: block;
+  padding: 5px;
+  margin-right: 5px;
+  color: #fff;
+  cursor: pointer;
+}
+
+.popup-fixed.hidden {
+  display: none;
+  z-index: -1;
 }
 @media screen and (min-width: 1200px){
   .container {
     margin: 0 auto;
     max-width: 1200px;
+  }
+  .popup-fixed {
+    padding-left: calc(50vw - 600px);
+    padding-right: calc(50vw - 600px);
   }
 }

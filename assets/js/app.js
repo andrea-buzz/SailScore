@@ -236,7 +236,14 @@ function show_started_competitors(){
     {name: "Max Cinquepalmi", sail_number: "183555", boat_class: "ILCA 7"}
   ];
   let tag_competitors = document.querySelector('[data-list="competitors"]');
-  competitors.forEach(c => tag_competitors.insertAdjacentHTML('afterBegin',`<div class="competitor" data-status="started"> <button type="button" data-role="pull-top">&#8679;</button> <span>${c.name}</span> <span>${c.sail_number}</span> <span>${c.boat_class}</span> <button type="button" data-role="set-arrived">&#9201;</button></div>`));
+  competitors.forEach(c => tag_competitors.insertAdjacentHTML('afterBegin',`
+<div class="competitor" data-status="started"> 
+  <button type="button" data-role="pull-top">&#8679;</button> 
+  <span class="crew">${c.name}</span> 
+  <span class="sail-number">${c.sail_number}</span> 
+  <span class="boat-class">${c.boat_class}</span> 
+  <button type="button" data-role="set-arrived">&#9201;</button>
+</div>`));
   document.querySelectorAll('[data-role="pull-top"]').forEach(b => b.addEventListener('click', pull_top));
   function pull_top (e){
     let c = e.currentTarget.parentNode; 
@@ -248,8 +255,62 @@ show_started_competitors();
 function showSailors(e){
   let tag_sailors = document.querySelector('[data-list="sailors"]');
   let sailors = e.currentTarget.result;
+  tag_sailors.innerHTML = '';
   sailors.forEach(s => tag_sailors.insertAdjacentHTML('afterBegin',`<div class="sailor">
-      <span class="firstname">${s.firstname}</span> <span class="lastname">${s.lastname}</span> <span class="fiv">FIV: ${s.fiv}</span> 
+      <span class="firstname">${s.firstname}</span> 
+      <span class="lastname">${s.lastname}</span> 
+      <span class="fiv">FIV: ${s.fiv}</span>
+      <button type="button" data-role="edit_sailor" data-id="${s.id}"> &#9998; </button>
     </div>`));
+  document.querySelectorAll('[data-role="edit_sailor"]').forEach(b => b.addEventListener('click', edit_sailor));
 }
 sailorSingleton.getAll(showSailors);
+document.querySelector('[data-role="add_sailor"]').addEventListener('click', add_sailor);
+function edit_sailor(e) {
+  let id = e.currentTarget.getAttribute('data-id');
+  console.log(id);
+  
+}
+
+function add_sailor(e) {
+  const form = `<form data-role="form-sailor">
+      <div class="field-group">
+        <label>Firstname</label> <input type="text" name="firstname" />
+      </div>
+      <div class="field-group">
+        <label>Lastname</label> <input type="text" name="lastname" />
+      </div>
+      <div class="field-group">
+        <label>BirthDate</label> <input type="date" name="birthdate" />
+      </div>
+      <div class="field-group">
+        <label>FIV num.</label> <input type="text" name="fiv" />
+      </div>
+      <div class="field-group">
+        <button type="reset">Reset</button> <button type="button" data-role="save_sailor">Save</button>
+      </div>
+    </form>`;
+  addToPopup(form);
+  document.querySelector('[data-role="save_sailor"]').addEventListener('click', save_sailor);
+}
+
+function save_sailor(e){
+  const fields = e.currentTarget.parentElement.parentElement.querySelectorAll('input[name]');
+  const vs = [...fields].map(f => [f.name, f.value]);
+  const sailor = Object.fromEntries( new Map(vs));
+  sailorSingleton.saveSailor(sailor);
+  sailorSingleton.getAll(showSailors);
+  removeFromPopup();
+}
+
+function addToPopup(html){
+  let w = document.querySelector('.popup-fixed');
+  w.querySelector('.popup-content').innerHTML = html;
+  w.classList.remove('hidden')
+}
+
+function removeFromPopup(){
+  let w = document.querySelector('.popup-fixed');
+  w.querySelector('.popup-content').innerHTML = '';
+  w.classList.add('hidden')
+}

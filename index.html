@@ -38,11 +38,15 @@
                 <article>
                   <header>
                       <h2>Sailors</h2>
+                      <div class="field-group">
+                        <button type="button" data-role="add_sailor"> &#10133; </button>
+                      </div>
                   </header>
                     <div class="content" data-list="sailors"></div>
                 </article>
               </div>
         </section>
+      <section class="popup-fixed hidden"><div class="popup-wrapper"><div class="popup-header"><a class="btn-close" onclick="removeFromPopup()">&#128473;</a></div><div class="popup-content"></div></div></section>
         <footer class="page-footer">
             <div class="container"></div>
         </footer>
