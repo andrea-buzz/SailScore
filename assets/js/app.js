@@ -337,13 +337,7 @@ function showSailors(e){
   document.querySelectorAll('[data-role="edit_sailor"]').forEach(b => b.addEventListener('click', edit_sailor));
   document.querySelectorAll('[data-role="delete_sailor"]').forEach(b => b.addEventListener('click', delete_sailor));
 }
-sailorSingleton.getAll(showSailors);
-document.querySelector('[data-role="add_sailor"]').addEventListener('click', add_sailor);
-function edit_sailor(e) {
-  let id = e.currentTarget.getAttribute('data-id');
-  console.log(id);
-  
-}
+
 
 function add_sailor(e) {
   const form = `<form data-role="form-sailor">
@@ -357,7 +351,7 @@ function add_sailor(e) {
         <label>BirthDate</label> <input type="date" name="birthdate" />
       </div>
       <div class="field-group">
-        <label>FIV num.</label> <input type="text" name="fiv" />
+        <label>FIV num.</label> <input type="number" name="fiv" />
       </div>
       <div class="field-group">
         <input type="hidden" name="id" />
@@ -386,7 +380,7 @@ function edit_sailor(e) {
         <label>BirthDate</label> <input type="date" name="birthdate" value="${s.birthdate}" />
       </div>
       <div class="field-group">
-        <label>FIV num.</label> <input type="text" name="fiv" value="${s.fiv}" />
+        <label>FIV num.</label> <input type="number" name="fiv" value="${s.fiv}" />
       </div>
       <div class="field-group">
         <input type="hidden" name="id" value="${s.id}" />
@@ -421,3 +415,6 @@ function removeFromPopup(){
   w.querySelector('.popup-content').innerHTML = '';
   w.classList.add('hidden')
 }
+
+sailorSingleton.getAll(showSailors);
+document.querySelector('[data-role="add_sailor"]').addEventListener('click', add_sailor);
