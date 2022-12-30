@@ -58,10 +58,19 @@ div[data-list="competitors"] .competitor button {
 }
 div[data-list="sailors"] .sailor {
   display: flex;
+  justify-content: space-between;
   margin-bottom: 15px;
 }
 div[data-list="sailors"] .sailor span {
-  flex-basis: 30%;
+  flex-basis: 28%;
+}
+div[data-list="sailors"] .sailor span.birthdate {
+  display: none;
+}
+div[data-list="sailors"] .sailor span.actions {
+  flex-basis: 94px;
+  text-align: right;
+  white-space: nowrap
 }
 .field-group {
   margin-bottom: 15px;
@@ -115,6 +124,11 @@ div[data-list="sailors"] .sailor span {
 .popup-fixed.hidden {
   display: none;
   z-index: -1;
+}
+@media screen and (min-width:768px) {
+  div[data-list="sailors"] .sailor span.birthdate {
+    display: block;
+  }
 }
 @media screen and (min-width: 1200px){
   .container {

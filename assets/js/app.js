@@ -52,15 +52,10 @@ class Club {
 }
 
 class Sailor {
-  /*
-  firstname='';
-  lastname='';
-  fiv=0;
-  birthdate=0;
-  */
+  
   constructor(s = {firstname:'',lastname:'',fiv:null}) {
     
-    if(s.id) this.id =  new Number(id);
+    if(s.id) this.id =  new Number(s.id);
     this.firstname = s.firstname ? stripHtml(s.firstname):'';
     this.lastname = s.lastname?stripHtml(s.lastname):'';
     this.fiv = 0;
@@ -330,13 +325,15 @@ function showSailors(e){
   let tag_sailors = document.querySelector('[data-list="sailors"]');
   let sailors = e.currentTarget.result;
   tag_sailors.innerHTML = '';
-  sailors.forEach(s => tag_sailors.insertAdjacentHTML('afterBegin',`<div class="sailor">
-      <span class="firstname">${s.firstname}</span> 
-      <span class="lastname">${s.lastname}</span> 
+  sailors.forEach(d => {const s = new Sailor(d); tag_sailors.insertAdjacentHTML('afterBegin',`<div class="sailor">
+      <span class="fullname">${s.fullName}</span> 
+      <span class="birthdate"> ${s.birthDate} </span>
       <span class="fiv">FIV: ${s.fiv}</span>
-      <button type="button" data-role="edit_sailor" data-id="${s.id}"> &#9998; </button>
-      <button type="button" data-role="delete_sailor" data-id="${s.id}"> &#128465;&#65039; </button>
-    </div>`));
+      <span class="actions">
+        <button type="button" data-role="edit_sailor" data-id="${s.id}"> &#9998; </button>
+        <button type="button" data-role="delete_sailor" data-id="${s.id}"> &#128465;&#65039; </button>
+      </span>
+    </div>`)});
   document.querySelectorAll('[data-role="edit_sailor"]').forEach(b => b.addEventListener('click', edit_sailor));
   document.querySelectorAll('[data-role="delete_sailor"]').forEach(b => b.addEventListener('click', delete_sailor));
 }
