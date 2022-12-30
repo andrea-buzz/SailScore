@@ -16,7 +16,7 @@ class SailScoreDB {
       };
       this.createBoatClassesStore(db);
       this.createSailorsStore(db);
-    }
+    };
     
     request.onerror = function(event) {
       console.log("Errore nell'apertura del database: " + event.target.errorCode);
@@ -45,24 +45,68 @@ const sailScoreDB = new SailScoreDB();
 
 class Club {
   constructor(name, location, id = null) {
-    if(id) this.id = parseInt(id, 10);
-    this.name = name;
-    this.location = location;
+    if(id) this.id = new Number(id);
+    this.name = stripHtml(name);
+    this.location = stripHtml(location);
   }
 }
 
 class Sailor {
-  constructor(firstname, lastname, fiv, id = null) {
-    if(id) this.id = parseInt(id, 10);
-    this.firstname = stripHtml(firstname);
-    this.lastname = stripHtml(lastname);
-    this.fiv = parseInt(fiv, 10);
+  /*
+  firstname='';
+  lastname='';
+  fiv=0;
+  birthdate=0;
+  */
+  constructor(s = {firstname:'',lastname:'',fiv:null}) {
+    
+    if(s.id) this.id =  new Number(id);
+    this.firstname = s.firstname ? stripHtml(s.firstname):'';
+    this.lastname = s.lastname?stripHtml(s.lastname):'';
+    this.fiv = 0;
+    this.fivNumber = s.fiv?s.fiv:0;
+    this.birthdate = 0;
+    this.birthDate = s.birthdate?s.birthdate:0;
+    if(('object' === typeof s) && ('number' === typeof s.length)){
+      this.#setFromArray(s);
+    }
+  };
+  
+  get fullName(){
+    return this.firstname + ' ' + this.lastname; 
+  };
+    get birthDate(){
+    return ( 0 === this.birthdate)?'':new Date( this.birthdate ).toLocaleDateString();
+  }
+  set birthDate(d){
+    this.birthdate = (typeof d === 'number')? new Date(d): Date.parse(d);
+  }
+  get fivNumber(){
+    return 0 === this.fiv ?'':Number(this.fiv);
+  }
+  set fivNumber(f){
+    this.fiv = Number(f);
+  }
+  getMyProperties(){
+    console.table(this.entries());
+  }
+  #setFromArray = function(s){
+    var T = this;
+    s.forEach(function(i){
+      if('id' === i.name && !isNaN(i.value) && i.value !==''){
+          T.id = Number(i.value);
+      }else{
+        if(T.hasOwnProperty(i.name.toString())){
+            T[i.name.toString()] = i.value;
+        }
+      }
+    });
   }
 }
 
 class Competitor {
   constructor(helm, crew, boat, sailNumber, id = null) {
-    if(id) this.id = parseInt(id, 10);
+    if(id) this.id = new Number(id);
     this.helm = helm;
     this.crew = crew;
     this.sailNumber = stripHtml(sailNumber);
@@ -71,7 +115,7 @@ class Competitor {
 
 class BoatClass{
   constructor(name, py, id = null) {
-    if(id) this.id = parseInt(id, 10);
+    if(id) this.id = new Number(id);
     this.name = stripHtml(name);
     this.py = py;
   }
@@ -135,8 +179,8 @@ class SailorSingleton {
     return SailorSingleton.instance;
   }
 
-  createSailor(firstname, lastname, fiv, id) {
-    const s = new Sailor(firstname, lastname, fiv);
+  createSailor(sailor) {
+    const s = new Sailor(sailor);
     this.saveSailor(s);
     return s;
   }
@@ -155,6 +199,36 @@ class SailorSingleton {
       console.log("Sailor salvato con successo nel database.");
     };
   }
+  get(id, fn){
+    const request = sailScoreDB.openDB();
+      request.onsuccess = function(event) {
+      const db = event.target.result;
+      const transaction = db.transaction(["Sailors"], "readonly");
+      const store = transaction.objectStore("Sailors");
+      const res = store.get(id);
+      
+      if (fn){
+        res.onsuccess = fn;
+      }
+      console.log("Sailor recuperato con successo.");
+    };
+
+  };
+  deleteSailor(id, fn){
+    const request = sailScoreDB.openDB();
+      request.onsuccess = function(event) {
+      const db = event.target.result;
+      const transaction = db.transaction(["Sailors"], "readwrite");
+      const store = transaction.objectStore("Sailors");
+      const res = store.delete(id);
+      
+      if (fn){
+        res.onsuccess = fn;
+      }
+      console.log("Sailor eliminato con successo.");
+    };
+    
+  }
   getAll(fn){
     const request = sailScoreDB.openDB();
 
@@ -172,7 +246,7 @@ class SailorSingleton {
       if (fn){
         res.onsuccess = fn;
       }
-      console.log("Sailor salvato con successo nel database.");
+      console.log("Sailors recuperati con successo.");
     };
   }
 }
@@ -261,8 +335,10 @@ function showSailors(e){
       <span class="lastname">${s.lastname}</span> 
       <span class="fiv">FIV: ${s.fiv}</span>
       <button type="button" data-role="edit_sailor" data-id="${s.id}"> &#9998; </button>
+      <button type="button" data-role="delete_sailor" data-id="${s.id}"> &#128465;&#65039; </button>
     </div>`));
   document.querySelectorAll('[data-role="edit_sailor"]').forEach(b => b.addEventListener('click', edit_sailor));
+  document.querySelectorAll('[data-role="delete_sailor"]').forEach(b => b.addEventListener('click', delete_sailor));
 }
 sailorSingleton.getAll(showSailors);
 document.querySelector('[data-role="add_sailor"]').addEventListener('click', add_sailor);
@@ -287,17 +363,51 @@ function add_sailor(e) {
         <label>FIV num.</label> <input type="text" name="fiv" />
       </div>
       <div class="field-group">
+        <input type="hidden" name="id" />
         <button type="reset">Reset</button> <button type="button" data-role="save_sailor">Save</button>
       </div>
     </form>`;
   addToPopup(form);
   document.querySelector('[data-role="save_sailor"]').addEventListener('click', save_sailor);
 }
+function delete_sailor(e){
+  if( true === confirm('Really want delete the record?') ){
+    sailorSingleton.deleteSailor(Number(e.currentTarget.getAttribute('data-id')), sailorSingleton.getAll(showSailors));
+  }
+}
+function edit_sailor(e) {
+  sailorSingleton.get(Number(e.currentTarget.getAttribute('data-id')), function(ev){
+    s = ev.currentTarget.result;
+    const form = `<form data-role="form-sailor">
+      <div class="field-group">
+        <label>Firstname</label> <input type="text" name="firstname" value="${s.firstname}" />
+      </div>
+      <div class="field-group">
+        <label>Lastname</label> <input type="text" name="lastname" value="${s.lastname}" />
+      </div>
+      <div class="field-group">
+        <label>BirthDate</label> <input type="date" name="birthdate" value="${s.birthdate}" />
+      </div>
+      <div class="field-group">
+        <label>FIV num.</label> <input type="text" name="fiv" value="${s.fiv}" />
+      </div>
+      <div class="field-group">
+        <input type="hidden" name="id" value="${s.id}" />
+        <button type="reset">Reset</button> <button type="button" data-role="save_sailor">Save</button>
+      </div>
+    </form>`;
+  addToPopup(form);
+  document.querySelector('[data-role="save_sailor"]').addEventListener('click', save_sailor);
+  });
+}
 
 function save_sailor(e){
   const fields = e.currentTarget.parentElement.parentElement.querySelectorAll('input[name]');
-  const vs = [...fields].map(f => [f.name, f.value]);
-  const sailor = Object.fromEntries( new Map(vs));
+  const ff = [...fields].map(f => ({name: f.name, value: f.value}));
+  
+  //const vs = [...fields].map(f => [f.name, f.value]);
+  //const sailor = Object.fromEntries( new Map(vs));
+  const sailor = new Sailor(ff);
   sailorSingleton.saveSailor(sailor);
   sailorSingleton.getAll(showSailors);
   removeFromPopup();

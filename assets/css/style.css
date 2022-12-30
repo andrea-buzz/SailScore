@@ -2,7 +2,7 @@ body, html {
   padding: 0;
   margin: 0;
   font-size: 1rem;
-  font-family: roboto, verdana, arial, sans-serif;
+  font-family: arial, roboto, verdana, sans-serif;
   background-color: #fff;
   color: #24292f;
 }
@@ -49,6 +49,9 @@ div[data-list="competitors"] .competitor span.crew{
 button[data-role] {
   min-width: 36px;
   min-height: 36px;
+}
+button[data-role] + button[data-role] {
+  margin-left: 1rem;
 }
 div[data-list="competitors"] .competitor button {
   width: 36px;
