@@ -14,6 +14,10 @@ class SailScoreDB {
       db.onerror = (event) => {
         console.log( "Error loading database.");
       };
+      this.createClubStore(db);
+      this.createRegattasStore(db);
+      this.createCompetitorsStore(db);
+      this.createRacesStore(db);
       this.createBoatClassesStore(db);
       this.createSailorsStore(db);
     };
@@ -23,7 +27,26 @@ class SailScoreDB {
     };
     return request;
   }
-  
+  createClubStore(db){
+    const objectStore = db.createObjectStore("Club", { keyPath: "id", autoIncrement: true } ); 
+    objectStore.createIndex("id", "id", { unique: true });
+    objectStore.createIndex("name", "name", { unique: false });
+  }
+  createRegattasStore(db){
+    const objectStore = db.createObjectStore("Regattas", { keyPath: "id", autoIncrement: true } ); 
+    objectStore.createIndex("id", "id", { unique: true });
+    objectStore.createIndex("name", "name", { unique: false });
+  }
+  createRacesStore(db){
+    const objectStore = db.createObjectStore("Races", { keyPath: "id", autoIncrement: true } ); 
+    objectStore.createIndex("id", "id", { unique: true });
+    objectStore.createIndex("name", "name", { unique: false });
+  }
+  createCompetitorsStore(db){
+    const objectStore = db.createObjectStore("Competitors", { keyPath: "id", autoIncrement: true } ); 
+    objectStore.createIndex("id", "id", { unique: true });
+    objectStore.createIndex("name", "name", { unique: false });
+  }
   createBoatClassesStore(db){
     const objectStore = db.createObjectStore("BoatClasses", { keyPath: "id", autoIncrement: true } ); 
     objectStore.createIndex("id", "id", { unique: true });
@@ -315,8 +338,10 @@ function show_started_competitors(){
 </div>`));
   document.querySelectorAll('[data-role="pull-top"]').forEach(b => b.addEventListener('click', pull_top));
   function pull_top (e){
-    let c = e.currentTarget.parentNode; 
+    let c = e.currentTarget.parentNode;
+    c.classList.add('pulled-top');
     c.style.order --;
+    setTimeout(function(){c.classList.remove('pulled-top');}, 500);
   }
 }
 show_started_competitors();
@@ -325,7 +350,7 @@ function showSailors(e){
   let tag_sailors = document.querySelector('[data-list="sailors"]');
   let sailors = e.currentTarget.result;
   tag_sailors.innerHTML = '';
-  sailors.forEach(d => {const s = new Sailor(d); tag_sailors.insertAdjacentHTML('afterBegin',`<div class="sailor">
+  sailors.forEach(d => {const s = new Sailor(d); tag_sailors.insertAdjacentHTML('beforeEnd',`<div class="sailor">
       <span class="fullname">${s.fullName}</span> 
       <span class="birthdate"> ${s.birthDate} </span>
       <span class="fiv">FIV: ${s.fiv}</span>
@@ -362,10 +387,12 @@ function add_sailor(e) {
   document.querySelector('[data-role="save_sailor"]').addEventListener('click', save_sailor);
 }
 function delete_sailor(e){
-  if( true === confirm('Really want delete the record?') ){
-    sailorSingleton.deleteSailor(Number(e.currentTarget.getAttribute('data-id')), sailorSingleton.getAll(showSailors));
-  }
-}
+  const sailor_id = Number(e.currentTarget.getAttribute('data-id'));  
+  pop.confirm('Really want delete the record?', function(){
+    sailorSingleton.deleteSailor(sailor_id, function(){sailorSingleton.getAll(showSailors);});
+  });
+};
+
 function edit_sailor(e) {
   sailorSingleton.get(Number(e.currentTarget.getAttribute('data-id')), function(ev){
     s = ev.currentTarget.result;
@@ -404,6 +431,39 @@ function save_sailor(e){
   removeFromPopup();
 }
 
+var pop = {
+  response : function(res){
+    if(true === res){
+      if('function'=== typeof pop.fn_yes){
+        pop.fn_yes();
+      }
+    }else{
+      if('function'=== typeof pop.fn_no){
+        pop.fn_no();
+      }
+    }
+    removeFromPopup();
+  },
+  fn_yes: null,
+  fn_no: null,
+  confirm : function(msg='', fn_yes, fn_no){
+    html = `<div class="confirm"><div class="confirm-question">${msg}</div><div class="confirm-buttons">
+        <button type="button" onclick="pop.response(true)"> Yes </button>
+        <button type="button" onclick="pop.response(false)"> No </button>
+      </div></div>`;
+    if( fn_yes ){
+      pop.fn_yes = fn_yes;
+    }
+    if( fn_no ){
+      pop.fn_no = fn_no;
+    }
+    addToPopup(html);
+    
+  }  
+};
+
+
+
 function addToPopup(html){
   let w = document.querySelector('.popup-fixed');
   w.querySelector('.popup-content').innerHTML = html;
@@ -418,3 +478,14 @@ function removeFromPopup(){
 
 sailorSingleton.getAll(showSailors);
 document.querySelector('[data-role="add_sailor"]').addEventListener('click', add_sailor);
+document.querySelector('#global-nav .toggle-menu').addEventListener('click',function(e){
+  
+  const c = document.querySelector('#global-nav > ul');
+  if(Boolean(c.getAttribute('aria-expanded')) === false){
+    c.setAttribute('aria-expanded', 'true');
+    e.currentTarget.classList.add('opened');
+  }else{
+    c.setAttribute('aria-expanded', '');
+    e.currentTarget.classList.remove('opened');
+  }
+});

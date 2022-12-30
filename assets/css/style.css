@@ -18,8 +18,13 @@ a {
   position: relative;
   margin: 0 15px;
 }
+.wrap-menu-top {
+  background-color: #333;
+  color: #fff;
+  position: relative;
+}
 .page-header {
-  padding:20px;
+  padding: 0;
   background-color: #f6f8fa;
 }
 .page-footer {
@@ -32,14 +37,23 @@ div[data-list="competitors"] {
   flex-direction: column;
 }
 div[data-list="competitors"] .competitor {
-  margin-bottom: 15px;
+  padding:8px 2px;
   display: flex;
   justify-content: space-between;
+  transition: 1s order linear .75s;
+  transition: 1s background-color ease 1s;
+  background-color: transparent;
+}
+div[data-list="competitors"] .competitor.pulled-top {
+  transition: .3s background-color ease 0s;
+  background-color: #ffff99;
+  box-shadow: 0 0 1px 1px #0969da;
 }
 div[data-list="competitors"] .competitor[data-status="started"] {
   order: 1000;
-  transition: .3s order;
+  
 }
+
 div[data-list="competitors"] .competitor span {
   flex-basis: 12%;
 }
@@ -88,6 +102,22 @@ div[data-list="sailors"] .sailor span.actions {
 .field-group input[type="date"] {
   width: 100%; 
 }
+/* POP CONFIRM */
+
+.confirm .confirm-question {
+  font-size: 18px;
+  margin-bottom: 1rem;
+}
+.confirm .confirm-buttons {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+}
+.confirm .confirm-buttons button {
+  padding: 4px 8px;
+  min-width: 60px;
+}
+/* POPUP */
 .popup-fixed {
   position: fixed;
   z-index: 3;
@@ -125,15 +155,114 @@ div[data-list="sailors"] .sailor span.actions {
   display: none;
   z-index: -1;
 }
+#global-nav {
+  padding: .6rem 0;
+  min-height: 42px;
+}
+#global-nav .toggle-menu {
+  width: 40px;
+  height: 40px;
+  float: right;
+  display: block;
+  color: #fff;
+  cursor: pointer;
+  position: absolute;
+  top: 10px;
+  right: 0;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, .5); 
+}
+#global-nav .toggle-menu:before{
+  display: block;
+  width: 40px;
+  height: 40px;
+  font-size: 40px;
+  content: '\01d118';
+  text-align: center;
+  line-height: 1;
+}
+#global-nav .toggle-menu.opened:before {
+  content: '\01f5d9';
+  font-size: 30px;
+  line-height: 1.2;
+}
+#global-nav > ul {
+  padding: 0;
+  margin: 0;
+  display: none;
+  transition: .5s transform ease .75s;
+  transform: translateX( -100% );
+  
+}
+#global-nav > ul[aria-expanded=""]{
+  
+  transform: translateX( -100% );
+}
+#global-nav > ul[aria-expanded="true"]{
+  display: block;
+  position: absolute;
+  z-index: 2;
+  top: 60px;
+  left: 0;
+  right: 0;
+  background-color: #4d4d4d;
+  padding: 15px;
+  margin: 0 -15px;
+  transition: .5s transform ease .75s;
+  transform: translateX( 0% );
+}
+#global-nav > ul li {
+  display: block;
+  margin-bottom: .6rem
+}
+#global-nav > ul li a {
+  color: #fff;
+  cursor: pointer;
+  width: 100%;
+  display: block;
+  margin-bottom: .6rem
+}
+
 @media screen and (min-width:768px) {
+  #global-nav .toggle-menu {
+    display: none;
+  }
+  #global-nav > ul[aria-expanded=""]{
+    display: flex;
+  }
+  #global-nav > ul {
+    display: flex;
+    flex-direction: row;
+    column-gap: .5rem;
+    justify-content: space-between;
+  }
+  #global-nav > ul li {
+    display: flex;
+    flex-basis: 16%;
+  }
+  #global-nav > ul li a {
+    padding: 4px 8px;
+    border: 1px solid rgba(255, 255, 255, .5);
+    margin-bottom: 0;
+    transition: .3s background-color ease;
+    text-align: center;
+  }
+  #global-nav > ul li a:hover{
+    background-color: #fff;
+    color:#333;
+    font-weight: bold;
+  }
   div[data-list="sailors"] .sailor span.birthdate {
     display: block;
   }
 }
+
 @media screen and (min-width: 1200px){
   .container {
     margin: 0 auto;
     max-width: 1200px;
+  }
+  #global-nav > ul li {
+    flex-basis: 13%;
   }
   .popup-fixed {
     padding-left: calc(50vw - 600px);
