@@ -69,17 +69,19 @@ class entity {
   constructor(c = {id:null}) {
     if(c.id && null !== c.id && '' !== c.id && !isNaN(c.id)) this.id = Number(c.id);
   }
-  setFromArray = function(s){
+  setFromArray = function(a){
     var T = this;
-    s.forEach(function(i){
-      if('id' === i.name && !isNaN(i.value) && i.value !==''){
-          T.id = Number(i.value);
-      }else{
-        if(T.hasOwnProperty(i.name.toString())){
-            T[i.name.toString()] = i.value;
+    if(('object' === typeof a) && ('number' === typeof a.length)){
+      a.forEach(function(i){
+        if('id' === i.name && !isNaN(i.value) && i.value !==''){
+            T.id = Number(i.value);
+        }else{
+          if(T.hasOwnProperty(i.name.toString())){
+              T[i.name.toString()] = i.value;
+          }
         }
-      }
-    });
+      });     
+    }
   }
   setPropByObj = function(prop, obj){
     if('string' === typeof prop){
@@ -93,9 +95,8 @@ class Club extends entity {
     this.setPropByObj('address', c);
     this.setPropByObj('name', c);
     this.setPropByObj('location', c);
-    if(('object' === typeof c) && ('number' === typeof c.length)){
-      this.setFromArray(c);
-    }
+    
+    this.setFromArray(c);
   }
 }
 
