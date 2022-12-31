@@ -367,8 +367,8 @@ function show_started_competitors(){
   function pull_top (e){
     let c = e.currentTarget.parentNode;
     c.classList.add('pulled-top');
-    c.style.order --;
-    setTimeout(function(){c.classList.remove('pulled-top');}, 500);
+    c_order = window.getComputedStyle(c).order - 1;
+    setTimeout(function(){c.classList.remove('pulled-top');c.style.order = c_order;}, 300);
   }
 }
 show_started_competitors();

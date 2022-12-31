@@ -40,18 +40,16 @@ div[data-list="competitors"] .competitor {
   padding:8px 2px;
   display: flex;
   justify-content: space-between;
-  transition: 1s order linear .75s;
-  transition: 1s background-color ease 1s;
+  transition: .5s order linear .1s, 1.5s background-color ease 1s;
   background-color: transparent;
 }
 div[data-list="competitors"] .competitor.pulled-top {
-  transition: .3s background-color ease 0s;
+  transition:  .5s order linear .1s, .2s background-color ease 0s;
   background-color: #ffff99;
   box-shadow: 0 0 1px 1px #0969da;
 }
 div[data-list="competitors"] .competitor[data-status="started"] {
   order: 1000;
-  
 }
 
 div[data-list="competitors"] .competitor span {
