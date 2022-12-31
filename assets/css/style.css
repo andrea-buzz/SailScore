@@ -61,15 +61,37 @@ div[data-list="competitors"] .competitor span.crew{
   flex-basis: 40%;
 }
 button[data-role] {
-  min-width: 36px;
-  min-height: 36px;
+  min-width: 32px;
+  min-height: 32px;
 }
 button[data-role] + button[data-role] {
-  margin-left: 1rem;
+  margin-left: 10px;
 }
-div[data-list="competitors"] .competitor button {
-  width: 36px;
+div[data-list="competitors"] .competitor button[data-role="pull-top"], 
+div[data-list="competitors"] .competitor button[data-role="set-arrived"], 
+button[data-role="edit_sailor"] {
+  min-width: 32px;
+  min-height: 32px;
+  width: 32px;
+  height: 32px;
+  font-size: 18px;
+  text-align: center; 
+  padding:0;
+  line-height: 1;
 }
+button[data-role="add_sailor"]{
+  text-align: center;
+  padding: 0;
+  line-height: 1;
+}
+.btn-close {
+  width: 32px;
+  height: 32px;
+  color: transparent;
+  background: transparent url('../img/cancel.svg') no-repeat center center;
+  background-size: 24px 24px;
+}
+
 div[data-list="sailors"] .sailor {
   display: flex;
   justify-content: space-between;
@@ -108,15 +130,7 @@ div[data-list="sailors"] .sailor span.actions {
   font-size: 18px;
   margin-bottom: 1rem;
 }
-.confirm .confirm-buttons {
-  display: flex;
-  flex-direction: row;
-  justify-content: space-around;
-}
-.confirm .confirm-buttons button {
-  padding: 4px 8px;
-  min-width: 60px;
-}
+
 /* POPUP */
 .popup-fixed {
   position: fixed;
@@ -141,7 +155,15 @@ div[data-list="sailors"] .sailor span.actions {
   justify-content: flex-end;
   background-color: #333;
 }
-
+.popup-fixed .popup-content .popup-buttons {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+}
+.popup-fixed .popup-content .popup-buttons button {
+  padding: 4px 8px;
+  min-width: 60px;
+}
 .popup-fixed .popup-header > .btn-close{
   position: relative;
   display: block;
@@ -157,11 +179,11 @@ div[data-list="sailors"] .sailor span.actions {
 }
 #global-nav {
   padding: .6rem 0;
-  min-height: 42px;
+  min-height: 32px;
 }
 #global-nav .toggle-menu {
-  width: 40px;
-  height: 40px;
+  width: 30px;
+  height: 30px;
   float: right;
   display: block;
   color: #fff;
@@ -169,21 +191,18 @@ div[data-list="sailors"] .sailor span.actions {
   position: absolute;
   top: 10px;
   right: 0;
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, .5); 
+  background: transparent url('../img/menu.svg') center center no-repeat;
+  background-size: 24px 24px;
+  border: solid 1px transparent;
+  border-radius: 3px; 
 }
-#global-nav .toggle-menu:before{
-  display: block;
-  width: 40px;
-  height: 40px;
-  font-size: 40px;
-  content: '\01d118';
-  text-align: center;
-  line-height: 1;
+
+#global-nav .toggle-menu:active {
+  outline: 1px solid rgba(9, 105, 218, .2);
 }
-#global-nav .toggle-menu.opened:before {
-  content: '\01f5d9';
-  font-size: 30px;
-  line-height: 1.2;
+#global-nav .toggle-menu.opened {
+  background: transparent url('../img/cancel.svg') no-repeat center center;
+  background-size: 24px 24px;
 }
 #global-nav > ul {
   padding: 0;
@@ -201,7 +220,7 @@ div[data-list="sailors"] .sailor span.actions {
   display: block;
   position: absolute;
   z-index: 2;
-  top: 60px;
+  top: 50px;
   left: 0;
   right: 0;
   background-color: #4d4d4d;
@@ -216,6 +235,7 @@ div[data-list="sailors"] .sailor span.actions {
 }
 #global-nav > ul li a {
   color: #fff;
+  font-size: 18px;
   cursor: pointer;
   width: 100%;
   display: block;
@@ -228,18 +248,21 @@ div[data-list="sailors"] .sailor span.actions {
   }
   #global-nav > ul[aria-expanded=""]{
     display: flex;
+    transform: translateX(0);
   }
   #global-nav > ul {
     display: flex;
     flex-direction: row;
     column-gap: .5rem;
     justify-content: space-between;
+    transform: translateX(0);
   }
   #global-nav > ul li {
     display: flex;
     flex-basis: 16%;
   }
   #global-nav > ul li a {
+    font-size: 16px;
     padding: 4px 8px;
     border: 1px solid rgba(255, 255, 255, .5);
     margin-bottom: 0;

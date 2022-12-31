@@ -65,12 +65,37 @@ const sailScoreDB = new SailScoreDB();
 
 
 /* ENTITIES */
-
-class Club {
-  constructor(name, location, id = null) {
-    if(id) this.id = new Number(id);
-    this.name = stripHtml(name);
-    this.location = stripHtml(location);
+class entity {
+  constructor(c = {id:null}) {
+    if(c.id && null !== c.id && '' !== c.id && !isNaN(c.id)) this.id = Number(c.id);
+  }
+  setFromArray = function(s){
+    var T = this;
+    s.forEach(function(i){
+      if('id' === i.name && !isNaN(i.value) && i.value !==''){
+          T.id = Number(i.value);
+      }else{
+        if(T.hasOwnProperty(i.name.toString())){
+            T[i.name.toString()] = i.value;
+        }
+      }
+    });
+  }
+  setPropByObj = function(prop, obj){
+    if('string' === typeof prop){
+      this[prop] = (obj).hasOwnProperty(prop)?stripHtml(obj[prop]):null;
+    }
+  };
+}
+class Club extends entity {
+  constructor(c = {name:'', location:'', id: null}) {
+    super(c);
+    this.setPropByObj('address', c);
+    this.setPropByObj('name', c);
+    this.setPropByObj('location', c);
+    if(('object' === typeof c) && ('number' === typeof c.length)){
+      this.setFromArray(c);
+    }
   }
 }
 
@@ -86,14 +111,15 @@ class Sailor {
     this.birthdate = 0;
     this.birthDate = s.birthdate?s.birthdate:0;
     if(('object' === typeof s) && ('number' === typeof s.length)){
-      this.#setFromArray(s);
+      this.setFromArray(s);
     }
   };
   
   get fullName(){
     return this.firstname + ' ' + this.lastname; 
   };
-    get birthDate(){
+  
+  get birthDate(){
     return ( 0 === this.birthdate)?'':new Date( this.birthdate ).toLocaleDateString();
   }
   set birthDate(d){
@@ -108,7 +134,7 @@ class Sailor {
   getMyProperties(){
     console.table(this.entries());
   }
-  #setFromArray = function(s){
+  setFromArray = function(s){
     var T = this;
     s.forEach(function(i){
       if('id' === i.name && !isNaN(i.value) && i.value !==''){
@@ -409,7 +435,7 @@ function edit_sailor(e) {
       <div class="field-group">
         <label>FIV num.</label> <input type="number" name="fiv" value="${s.fiv}" />
       </div>
-      <div class="field-group">
+      <div class="popup-buttons">
         <input type="hidden" name="id" value="${s.id}" />
         <button type="reset">Reset</button> <button type="button" data-role="save_sailor">Save</button>
       </div>
@@ -447,7 +473,7 @@ var pop = {
   fn_yes: null,
   fn_no: null,
   confirm : function(msg='', fn_yes, fn_no){
-    html = `<div class="confirm"><div class="confirm-question">${msg}</div><div class="confirm-buttons">
+    html = `<div class="confirm"><div class="confirm-question">${msg}</div><div class="popup-buttons">
         <button type="button" onclick="pop.response(true)"> Yes </button>
         <button type="button" onclick="pop.response(false)"> No </button>
       </div></div>`;
