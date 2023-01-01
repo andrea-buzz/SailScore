@@ -1,3 +1,8 @@
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("./sw.js");
+}
+
+
 /* DATABASE */
 class SailScoreDB {
   constructor() {
@@ -69,7 +74,7 @@ class entity {
   constructor(c = {id:null}) {
     if(c.id && null !== c.id && '' !== c.id && !isNaN(c.id)) this.id = Number(c.id);
   }
-  setFromArray = function(a){
+  #setFromArray = function(a){
     var T = this;
     if(('object' === typeof a) && ('number' === typeof a.length)){
       a.forEach(function(i){
@@ -83,7 +88,7 @@ class entity {
       });     
     }
   }
-  setPropByObj = function(prop, obj){
+  #setPropByObj = function(prop, obj){
     if('string' === typeof prop){
       this[prop] = (obj).hasOwnProperty(prop)?stripHtml(obj[prop]):null;
     }
@@ -92,11 +97,11 @@ class entity {
 class Club extends entity {
   constructor(c = {name:'', location:'', id: null}) {
     super(c);
-    this.setPropByObj('address', c);
-    this.setPropByObj('name', c);
-    this.setPropByObj('location', c);
+    this.#setPropByObj('address', c);
+    this.#setPropByObj('name', c);
+    this.#setPropByObj('location', c);
     
-    this.setFromArray(c);
+    this.#setFromArray(c);
   }
 }
 
