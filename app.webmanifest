@@ -1,0 +1,29 @@
+{
+  "name": "Sail Score",
+  "id": "SailScore",
+  "display":  "standalone",
+  "orientation":  "portrait",
+  "offline_enabled": true,
+  "icons": [
+     {
+        "src": "android-48x48.png",
+        "type": "image/png",
+        "sizes": "48x48"
+     },
+     {
+        "src": "assets/img/menu.svg",
+        "type": "image/svg",
+        "sizes": "32x32"
+     },
+     {
+        "src": "assets/img/cancel.svg",
+        "type": "image/svg",
+        "sizes": "32x32"
+     },
+     {
+        "src": "assets/img/cancel-black.svg",
+        "type": "image/svg",
+        "sizes": "32x32"
+     }
+  ]
+}
