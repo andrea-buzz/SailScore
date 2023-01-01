@@ -112,7 +112,7 @@ class Sailor {
     this.birthdate = 0;
     this.birthDate = s.birthdate?s.birthdate:0;
     if(('object' === typeof s) && ('number' === typeof s.length)){
-      this.setFromArray(s);
+      this.#setFromArray(s);
     }
   };
   
@@ -135,7 +135,7 @@ class Sailor {
   getMyProperties(){
     console.table(this.entries());
   }
-  setFromArray = function(s){
+  #setFromArray = function(s){
     var T = this;
     s.forEach(function(i){
       if('id' === i.name && !isNaN(i.value) && i.value !==''){
