@@ -94,12 +94,26 @@ div[data-list="sailors"] .sailor {
   display: flex;
   justify-content: space-between;
   margin-bottom: 15px;
+  column-gap: 10px;
+  
 }
-div[data-list="sailors"] .sailor span {
-  flex-basis: 28%;
-}
+
 div[data-list="sailors"] .sailor span.birthdate {
   display: none;
+}
+/*
+div[data-list="sailors"] .sailor span.fiv {
+  flex-basis: 25%;
+}
+div[data-list="sailors"] .sailor span {
+  flex-basis: 15%;
+}
+*/
+div[data-list="sailors"] .sailor span.fullname {
+  flex-basis: 44%;
+  overflow-x: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 div[data-list="sailors"] .sailor span.actions {
   flex-basis: 94px;

@@ -47,11 +47,6 @@ class SailScoreDB {
     objectStore.createIndex("id", "id", { unique: true });
     objectStore.createIndex("name", "name", { unique: false });
   }
-  createBoatClassesStore(db){
-    const objectStore = db.createObjectStore("BoatClasses", { keyPath: "id", autoIncrement: true } ); 
-    objectStore.createIndex("id", "id", { unique: true });
-    objectStore.createIndex("name", "name", { unique: false });
-  }
   createSailorsStore(db){
     const objectStore = db.createObjectStore("Sailors", { keyPath: "id", autoIncrement: true } ); 
     objectStore.createIndex("id", "id", { unique: true });
@@ -59,6 +54,12 @@ class SailScoreDB {
     objectStore.createIndex("firstname", "firstname", { unique: false });
     objectStore.createIndex("lastname", "lastname", { unique: false });
     //objectStore.createIndex("fullname", ["firstname", "lastname", birtDate], { unique: true });
+  }
+  createBoatClassesStore(db){
+    const objectStore = db.createObjectStore("BoatClasses", { keyPath: "id", autoIncrement: true } ); 
+    objectStore.createIndex("id", "id", { unique: true });
+    objectStore.createIndex("name", "name", { unique: false });
+    importPotsmouthYardstick();
   }
 }
 const sailScoreDB = new SailScoreDB(); 
@@ -120,24 +121,27 @@ class Club extends entity {
     this._setPropByObj('location', c);
     */
     
-    //this._setFromArray = c;
+    this._setFromArray = c;
   }
 }
 
-class Sailor {
+class Sailor extends entity {
   
   constructor(s = {firstname:'',lastname:'',fiv:null}) {
-    
-    if(s.id) this.id =  new Number(s.id);
+    super(s);
+    //  if(s.id) this.id =  new Number(s.id);
     this.firstname = s.firstname ? stripHtml(s.firstname):'';
     this.lastname = s.lastname?stripHtml(s.lastname):'';
     this.fiv = 0;
     this.fivNumber = s.fiv?s.fiv:0;
     this.birthdate = 0;
     this.birthDate = s.birthdate?s.birthdate:0;
+    this._setFromArray = s;
+    /*
     if(('object' === typeof s) && ('number' === typeof s.length)){
       this.#setFromArray(s);
     }
+    */
   };
   
   get fullName(){
@@ -156,9 +160,11 @@ class Sailor {
   set fivNumber(f){
     this.fiv = Number(f);
   }
+  /*
   getMyProperties(){
     console.table(this.entries());
   }
+  
   #setFromArray = function(s){
     var T = this;
     s.forEach(function(i){
@@ -171,6 +177,7 @@ class Sailor {
       }
     });
   }
+  */
 }
 
 class Competitor {
@@ -413,7 +420,7 @@ function showSailors(e){
   sailors.forEach(d => {const s = new Sailor(d); tag_sailors.insertAdjacentHTML('beforeEnd',`<div class="sailor">
       <span class="fullname">${s.fullName}</span> 
       <span class="birthdate"> ${s.birthDate} </span>
-      <span class="fiv">FIV: ${s.fiv}</span>
+      <span class="fiv">fiv: ${s.fiv}</span>
       <span class="actions">
         <button type="button" data-role="edit_sailor" data-id="${s.id}"> &#9998; </button>
         <button type="button" data-role="delete_sailor" data-id="${s.id}"> &#128465;&#65039; </button>
