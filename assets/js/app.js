@@ -69,7 +69,7 @@ class entity {
   constructor(c = {id:null}) {
     if(c.id && null !== c.id && '' !== c.id && !isNaN(c.id)) this.id = Number(c.id);
   };
-  _setFromArray = function(a){
+  set _setFromArray(a){
     var T = this;
     if(('object' === typeof a) && ('number' === typeof a.length)){
       a.forEach(function(i){
@@ -77,26 +77,50 @@ class entity {
             T.id = Number(i.value);
         }else{
           if(T.hasOwnProperty(i.name.toString())){
-              T[i.name.toString()] = i.value;
+              T[i.name.toString()] = stripHtml(i.value);
           }
         }
       });     
     }
   };
-  _setPropByObj = function(prop, obj){
-    if('string' === typeof prop){
-      this[prop] = (obj).hasOwnProperty(prop)?stripHtml(obj[prop]):null;
-    }
+  set _setPropByObj(obj){  
+    Object.assign(this, Object.create(Object.getPrototypeOf(this)), obj);
+    /*if('string' === typeof prop){
+          this[prop] = (obj).hasOwnProperty(prop)?stripHtml(obj[prop]):null;
+        }*/
+  };
+  
+  set defineProperty(o){
+    let k = Object.keys(o).toString();
+    Object.defineProperty(this, k, o[k]);
   };
 }
 class Club extends entity {
   constructor(c = {name:'', location:'', id: null}) {
     super(c);
+    let PD = {value: null, writable: true, enumerable: true, configurable: false};
+    PD.value = stripHtml(c.name);
+    this.defineProperty = {name: PD};
+    PD.value = stripHtml(c.address);
+    this.defineProperty = {address: PD};
+    PD.value = stripHtml(c.location);
+    this.defineProperty = {location: PD};
+
+    /*
+    Object.defineProperty(this, 'name', PD);
+    Object.defineProperty(this, 'address', PD);
+    Object.defineProperty(this, 'location', PD);
+    */
+    console.table( Object.getOwnPropertyDescriptors(this));
+    //  console.table( Object.getOwnPropertyNames(this));
+    //this._setPropByObj = c;
+    /*
     this._setPropByObj('address', c);
     this._setPropByObj('name', c);
     this._setPropByObj('location', c);
+    */
     
-    this._setFromArray(c);
+    //this._setFromArray = c;
   }
 }
 
@@ -302,16 +326,25 @@ const sailorSingleton = new SailorSingleton();
 /* UTILITY FUNCTIONS */
 
 function stripHtml(str){
-  let strc = String(str).replace(/(<([^>]+)>)/gi, " ");
-  strc = strc.replace(/\t\t/gi, ' ');
-  strc = strc.replace(/\r/gi, ' ');
-  strc = strc.replace(/\n/gi, ' ');
-  strc = strc.replace(/\s\s\s\s\s/gi, ' ');
-  strc = strc.replace(/\s\s\s\s/gi, ' ');
-  strc = strc.replace(/\s\s\s/gi, ' ');
-  strc = strc.replace(/\s\s/gi, ' ');
-  strc = strc.replace(/^\s(.*)\s$/gi, '$1');
-  return strc;
+  switch(typeof str){
+    case 'undefined':
+      return null;
+      break;
+    case 'string':
+      let strc = String(str).replace(/(<([^>]+)>)/gi, " ");
+      strc = strc.replace(/\t\t/gi, ' ');
+      strc = strc.replace(/\r/gi, ' ');
+      strc = strc.replace(/\n/gi, ' ');
+      strc = strc.replace(/\s\s\s\s\s/gi, ' ');
+      strc = strc.replace(/\s\s\s\s/gi, ' ');
+      strc = strc.replace(/\s\s\s/gi, ' ');
+      strc = strc.replace(/\s\s/gi, ' ');
+      strc = strc.replace(/^\s(.*)\s$/gi, '$1');
+      return strc;
+      break;
+    default:
+      return str;
+  }
 }
 
 /* IMPORT FUNCTIONS */
