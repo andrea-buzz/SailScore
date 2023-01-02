@@ -559,5 +559,7 @@ document.querySelector('#global-nav .toggle-menu').addEventListener('click',func
 
 /* WORKER */
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("./sw.js");
+  if(location.origin !== 'file://'){
+    navigator.serviceWorker.register("./sw.js");
+  }
 }
