@@ -142,11 +142,12 @@ class Competitor {
   }
 }
 
-class BoatClass{
-  constructor(name, py, id = null) {
-    if(id) this.id = new Number(id);
-    this.name = stripHtml(name);
-    this.py = py;
+class BoatClass extends entity{
+  constructor(b = {name:'', rating: 1000, id: null}) {
+    super(b)
+    //if(id) this.id = new Number(id);
+    this.name = stripHtml(b.name);
+    this.rating = Number(b.rating);
   }
 }
 
@@ -160,8 +161,8 @@ class BoatClassSingleton {
     return BoatClassSingleton.instance;
   }
 
-  createBoatClass(name, py = 1000, id) {
-    const bc = new BoatClass(name, py);
+  createBoatClass(b) {
+    const bc = new BoatClass(b);
     this.saveBoatClass(bc);
     return bc;
   }
@@ -315,7 +316,7 @@ function importPotsmouthYardstick(){
     if(xhr.readyState === 4 && xhr.status === 200){
       const data = JSON.parse( xhr.responseText );
       if(data.length){
-        data.forEach( b => boatClassSingleton.saveBoatClass(b) ); 
+        data.forEach( b => boatClassSingleton.createBoatClass(b) ); 
       }
     }
     if (xhr.readyState !== 4) {
@@ -448,6 +449,18 @@ function save_sailor(e){
   sailorSingleton.saveSailor(sailor);
   sailorSingleton.getAll(showSailors);
   removeFromPopup();
+}
+
+function renderBoatClasses(e, target){
+  if(e){
+    let bc = e.target.result.map((b) => `<div data-id="${b.id}"><span>${b.name}</span> <span>${b.rating}</span></div>`);
+    console.dir(this.target);
+    if(this.target)this.target.innerHTML = bc.join();
+  }else{
+    boatClassSingleton.getAll(renderBoatClasses);
+    this.target = target;
+  }
+  //setTimeout(function(){console.log(bc)},1000);
 }
 
 var pop = {
