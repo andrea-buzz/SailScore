@@ -326,9 +326,8 @@ function importPotsmouthYardstick(){
     }
   };
   xhr.open('GET', url);
-  xhr.send()
+  xhr.send();
 }
-
 
 /* FRONT END FUNCTIONS */
 
@@ -357,7 +356,7 @@ function show_started_competitors(){
   function pull_top (e){
     let c = e.currentTarget.parentNode;
     c.classList.add('pulled-top');
-    c_order = window.getComputedStyle(c).order - 1;
+    let c_order = window.getComputedStyle(c).order - 1;
     c.style.order = c_order;
     setTimeout(function(){c.classList.remove('pulled-top');}, 1000);
   }
@@ -376,7 +375,7 @@ function showSailors(e){
         <button type="button" data-role="edit_sailor" data-id="${s.id}"> &#9998; </button>
         <button type="button" data-role="delete_sailor" data-id="${s.id}"> &#128465;&#65039; </button>
       </span>
-    </div>`)});
+    </div>`);});
   document.querySelectorAll('[data-role="edit_sailor"]').forEach(b => b.addEventListener('click', edit_sailor));
   document.querySelectorAll('[data-role="delete_sailor"]').forEach(b => b.addEventListener('click', delete_sailor));
 }
@@ -385,16 +384,16 @@ function showSailors(e){
 function add_sailor(e) {
   const form = `<form data-role="form-sailor">
       <div class="field-group">
-        <label>Firstname</label> <input type="text" name="firstname" />
+        <label>Firstname</label> <div class="form-control"><input type="text" name="firstname" /></div>
       </div>
       <div class="field-group">
-        <label>Lastname</label> <input type="text" name="lastname" />
+        <label>Lastname</label> <div class="form-control"><input type="text" name="lastname" /></div>
       </div>
       <div class="field-group">
-        <label>BirthDate</label> <input type="date" name="birthdate" />
+        <label>BirthDate</label> <div class="form-control"><input type="date" name="birthdate" /></div>
       </div>
       <div class="field-group">
-        <label>FIV num.</label> <input type="number" name="fiv" />
+        <label>FIV num.</label> <div class="form-control"><input type="number" name="fiv" /></div>
       </div>
       <div class="field-group">
         <input type="hidden" name="id" />
@@ -413,19 +412,19 @@ function delete_sailor(e){
 
 function edit_sailor(e) {
   sailorSingleton.get(Number(e.currentTarget.getAttribute('data-id')), function(ev){
-    s = ev.currentTarget.result;
+    let s = ev.currentTarget.result;
     const form = `<form data-role="form-sailor">
       <div class="field-group">
-        <label>Firstname</label> <input type="text" name="firstname" value="${s.firstname}" />
+        <label>Firstname</label> <div class="form-control"><input type="text" name="firstname" value="${s.firstname}" /></div>
       </div>
       <div class="field-group">
-        <label>Lastname</label> <input type="text" name="lastname" value="${s.lastname}" />
+        <label>Lastname</label> <div class="form-control"><input type="text" name="lastname" value="${s.lastname}" /></div>
       </div>
       <div class="field-group">
-        <label>BirthDate</label> <input type="date" name="birthdate" value="${s.birthdate}" />
+        <label>BirthDate</label> <div class="form-control"><input type="date" name="birthdate" value="${s.birthdate}" /></div>
       </div>
       <div class="field-group">
-        <label>FIV num.</label> <input type="number" name="fiv" value="${s.fiv}" />
+        <label>FIV num.</label> <div class="form-control"><input type="number" name="fiv" value="${s.fiv}" /></div>
       </div>
       <div class="popup-buttons">
         <input type="hidden" name="id" value="${s.id}" />
@@ -459,8 +458,9 @@ function renderBoatClasses(target){
         (b) => `<div data-id="${b.id}"><span>${b.name}</span> <span>${b.rating}</span></div>`);
     })
     .then((bc) => { bc.unshift(`<div data-role="thead"><span>name</span> <span>rating</span></div>`);
-      this.target.innerHTML = bc.join('\n')} );
+      this.target.innerHTML = bc.join('\n');} );
 }
+
 function renderTable(target, object_name = '', fn){
   this.target = target;
   this.keys = [];
@@ -479,10 +479,10 @@ function renderTable(target, object_name = '', fn){
             return `<div class="tr">${td}<span class="td actions">
         <button type="button" data-role="edit_${object_name}" data-id="${b.id}"> &#9998; </button>
         <button type="button" data-role="delete_${object_name}" data-id="${b.id}"> &#128465;&#65039; </button>
-      </span></div>`});
+      </span></div>`;});
       }
     }).then((bc) => { 
-      headers = this.keys.map((h) => `<span class="th ${h}">${h}</span>`).join('');
+      let headers = this.keys.map((h) => `<span class="th ${h}">${h}</span>`).join('');
       bc.unshift(`<div class="tr thead">${headers}<span class="th actions"></span></div>`);
       this.target.innerHTML = '<div class="data-table">' + bc.join('\n') + '</div>';
     });
@@ -504,7 +504,7 @@ var pop = {
   fn_yes: null,
   fn_no: null,
   confirm : function(msg='', fn_yes, fn_no){
-    html = `<div class="confirm"><div class="confirm-question">${msg}</div><div class="popup-buttons">
+    let html = `<div class="confirm"><div class="confirm-question">${msg}</div><div class="popup-buttons">
         <button type="button" onclick="pop.response(true)"> Yes </button>
         <button type="button" onclick="pop.response(false)"> No </button>
       </div></div>`;
@@ -524,19 +524,18 @@ var pop = {
 function addToPopup(html){
   let w = document.querySelector('.popup-fixed');
   w.querySelector('.popup-content').innerHTML = html;
-  w.classList.remove('hidden')
+  w.classList.remove('hidden');
 }
 
 function removeFromPopup(){
   let w = document.querySelector('.popup-fixed');
   w.querySelector('.popup-content').innerHTML = '';
-  w.classList.add('hidden')
+  w.classList.add('hidden');
 }
 
 sailorSingleton.getAll(showSailors);
 document.querySelector('[data-role="add_sailor"]').addEventListener('click', add_sailor);
-document.querySelector('#global-nav .toggle-menu').addEventListener('click',function(e){
-  
+document.querySelector('#global-nav .toggle-menu').addEventListener('click', (e) => {
   const c = document.querySelector('#global-nav > ul');
   if(Boolean(c.getAttribute('aria-expanded')) === false){
     c.setAttribute('aria-expanded', 'true');
