@@ -31,6 +31,71 @@ a {
   padding:20px;
   background-color: #24292f;
 }
+
+/* DATA TABLE */
+
+.data-table {
+  min-width: fit-content;
+  border-top: 1px solid #aaa;
+  border-left: 1px solid #aaa;
+}
+.data-table > .tr {
+  display: flex;
+  column-gap: 0;
+  justify-content: space-between;
+  
+}
+.data-table > .tr:nth-child( odd ) {
+  background-color: #efefef;
+}
+.data-table > .tr:nth-child( even ) {
+  background-color: #fff;
+}
+.data-table > .tr.thead {
+  background-color: #333;
+  color: #fff;
+}
+.data-table > .tr > .th {
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid #aaa;
+  border-right: 1px solid #aaa;
+  padding: 8px 4px;
+  font-weight: bold;
+  text-align: left;
+}
+.data-table > .tr > .td {
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid #aaa;
+  border-right: 1px solid #aaa;
+  padding: 4px;
+  text-align: left;
+}
+.data-table > .tr > .actions {
+    display: flex;
+    justify-content: flex-end;
+    flex-basis: 94px;
+    text-align: right;
+    white-space: nowrap;
+}
+.data-table > .tr > .id {
+  flex-basis: 50px;
+}
+.data-table > .tr > .rating {
+  flex-basis: 60px;
+}
+.data-table > .tr > .name {
+  flex-basis: 40%;
+  flex-grow: 1;
+  /*
+  overflow-x: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  */
+}
+/* COMPETITORS */
+
 div[data-list="competitors"] {
   flex-grow: 1;
   display: flex;
@@ -40,12 +105,15 @@ div[data-list="competitors"] .competitor {
   padding:8px 2px;
   display: flex;
   justify-content: space-between;
-  transition: .5s order linear .1s, 1.5s background-color ease 1s;
+  /*background-color: #fff;*/
+  filter: invert(0%);
+  transition: .5s order linear .1s, 1.5s filter ease 1s, 1.5s background-color ease 1s;
   background-color: transparent;
 }
 div[data-list="competitors"] .competitor.pulled-top {
-  transition:  .5s order linear .1s, .2s background-color ease 0s;
-  background-color: #ffff99;
+  transition:  .5s order linear .1s, .2s filter ease 0s;
+  background-color: #efefef;
+  filter:invert(100%);
   box-shadow: 0 0 1px 1px #0969da;
 }
 div[data-list="competitors"] .competitor[data-status="started"] {

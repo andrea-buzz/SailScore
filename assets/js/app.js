@@ -111,8 +111,6 @@ class Sailor extends entity {
     this.fiv = 0;
     this.fivNumber = s.fiv?s.fiv:0;
     this.birthDate = s.birthdate?s.birthdate:0;
-    this._setFromArray = s;
-    
   };
   
   get fullName(){
@@ -144,10 +142,10 @@ class Competitor {
 
 class BoatClass extends entity{
   constructor(b = {name:'', rating: 1000, id: null}) {
-    super(b)
+    super(b);
     //if(id) this.id = new Number(id);
     this.name = stripHtml(b.name);
-    this.rating = Number(b.rating);
+    this.rating = !isNaN(b.rating)?Number(b.rating):1000;
   }
 }
 
@@ -360,7 +358,8 @@ function show_started_competitors(){
     let c = e.currentTarget.parentNode;
     c.classList.add('pulled-top');
     c_order = window.getComputedStyle(c).order - 1;
-    setTimeout(function(){c.classList.remove('pulled-top');c.style.order = c_order;}, 300);
+    c.style.order = c_order;
+    setTimeout(function(){c.classList.remove('pulled-top');}, 1000);
   }
 }
 show_started_competitors();
@@ -445,22 +444,48 @@ function save_sailor(e){
   //const vs = [...fields].map(f => [f.name, f.value]);
   //const sailor = Object.fromEntries( new Map(vs));
   const sailor = new Sailor();
-  sailor._setFromArray(ff);
+  sailor._setFromArray = ff;
   sailorSingleton.saveSailor(sailor);
   sailorSingleton.getAll(showSailors);
   removeFromPopup();
 }
 
-function renderBoatClasses(e, target){
-  if(e){
-    let bc = e.target.result.map((b) => `<div data-id="${b.id}"><span>${b.name}</span> <span>${b.rating}</span></div>`);
-    console.dir(this.target);
-    if(this.target)this.target.innerHTML = bc.join();
-  }else{
-    boatClassSingleton.getAll(renderBoatClasses);
-    this.target = target;
-  }
-  //setTimeout(function(){console.log(bc)},1000);
+function renderBoatClasses(target){
+  this.target = target;
+  this.keys = [];
+  let p = new Promise(boatClassSingleton.getAll);
+  p.then((e) => {
+      return e.target.result.map(
+        (b) => `<div data-id="${b.id}"><span>${b.name}</span> <span>${b.rating}</span></div>`);
+    })
+    .then((bc) => { bc.unshift(`<div data-role="thead"><span>name</span> <span>rating</span></div>`);
+      this.target.innerHTML = bc.join('\n')} );
+}
+function renderTable(target, object_name = '', fn){
+  this.target = target;
+  this.keys = [];
+  let p = new Promise(fn);
+  
+  p.then((e) => {
+      let res = e.target.result;
+      //  res = [];
+      if(0 === res.length) {
+        return [`<div>Sorry, nothing to show!</div>`];
+      }else{
+        this.keys = Object.keys(res[0]);
+        return res.map(
+          (b) => {
+            let td = this.keys.map((h) => `<span class="td ${h}">${b[h]}</span>`).join('');
+            return `<div class="tr">${td}<span class="td actions">
+        <button type="button" data-role="edit_${object_name}" data-id="${b.id}"> &#9998; </button>
+        <button type="button" data-role="delete_${object_name}" data-id="${b.id}"> &#128465;&#65039; </button>
+      </span></div>`});
+      }
+    }).then((bc) => { 
+      headers = this.keys.map((h) => `<span class="th ${h}">${h}</span>`).join('');
+      bc.unshift(`<div class="tr thead">${headers}<span class="th actions"></span></div>`);
+      this.target.innerHTML = '<div class="data-table">' + bc.join('\n') + '</div>';
+    });
 }
 
 var pop = {
