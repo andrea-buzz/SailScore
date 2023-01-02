@@ -53,7 +53,7 @@ class SailScoreDB {
     objectStore.createIndex("fiv", "fiv", { unique: false });
     objectStore.createIndex("firstname", "firstname", { unique: false });
     objectStore.createIndex("lastname", "lastname", { unique: false });
-    //objectStore.createIndex("fullname", ["firstname", "lastname", birtDate], { unique: true });
+    //  objectStore.createIndex("fullname", ["firstname", "lastname", birtDate], { unique: true });
   }
   createBoatClassesStore(db){
     const objectStore = db.createObjectStore("BoatClasses", { keyPath: "id", autoIncrement: true } ); 
@@ -84,13 +84,6 @@ class entity {
       });     
     }
   };
-  set _setPropByObj(obj){  
-    Object.assign(this, Object.create(Object.getPrototypeOf(this)), obj);
-    /*if('string' === typeof prop){
-          this[prop] = (obj).hasOwnProperty(prop)?stripHtml(obj[prop]):null;
-        }*/
-  };
-  
   set defineProperty(o){
     let k = Object.keys(o).toString();
     Object.defineProperty(this, k, o[k]);
@@ -106,22 +99,6 @@ class Club extends entity {
     this.defineProperty = {address: PD};
     PD.value = stripHtml(c.location);
     this.defineProperty = {location: PD};
-
-    /*
-    Object.defineProperty(this, 'name', PD);
-    Object.defineProperty(this, 'address', PD);
-    Object.defineProperty(this, 'location', PD);
-    */
-    console.table( Object.getOwnPropertyDescriptors(this));
-    //  console.table( Object.getOwnPropertyNames(this));
-    //this._setPropByObj = c;
-    /*
-    this._setPropByObj('address', c);
-    this._setPropByObj('name', c);
-    this._setPropByObj('location', c);
-    */
-    
-    this._setFromArray = c;
   }
 }
 
@@ -129,19 +106,13 @@ class Sailor extends entity {
   
   constructor(s = {firstname:'',lastname:'',fiv:null}) {
     super(s);
-    //  if(s.id) this.id =  new Number(s.id);
     this.firstname = s.firstname ? stripHtml(s.firstname):'';
     this.lastname = s.lastname?stripHtml(s.lastname):'';
     this.fiv = 0;
     this.fivNumber = s.fiv?s.fiv:0;
-    this.birthdate = 0;
     this.birthDate = s.birthdate?s.birthdate:0;
     this._setFromArray = s;
-    /*
-    if(('object' === typeof s) && ('number' === typeof s.length)){
-      this.#setFromArray(s);
-    }
-    */
+    
   };
   
   get fullName(){
@@ -160,24 +131,6 @@ class Sailor extends entity {
   set fivNumber(f){
     this.fiv = Number(f);
   }
-  /*
-  getMyProperties(){
-    console.table(this.entries());
-  }
-  
-  #setFromArray = function(s){
-    var T = this;
-    s.forEach(function(i){
-      if('id' === i.name && !isNaN(i.value) && i.value !==''){
-          T.id = Number(i.value);
-      }else{
-        if(T.hasOwnProperty(i.name.toString())){
-            T[i.name.toString()] = i.value;
-        }
-      }
-    });
-  }
-  */
 }
 
 class Competitor {
@@ -316,9 +269,7 @@ class SailorSingleton {
       const transaction = db.transaction(["Sailors"], "readonly");
       const store = transaction.objectStore("Sailors");
       const res = store.getAll();
-      /*fn = function (e){
-        console.table(e.currentTarget.result);
-      };*/
+
       if (fn){
         res.onsuccess = fn;
       }
@@ -492,7 +443,8 @@ function save_sailor(e){
   
   //const vs = [...fields].map(f => [f.name, f.value]);
   //const sailor = Object.fromEntries( new Map(vs));
-  const sailor = new Sailor(ff);
+  const sailor = new Sailor();
+  sailor._setFromArray(ff);
   sailorSingleton.saveSailor(sailor);
   sailorSingleton.getAll(showSailors);
   removeFromPopup();
