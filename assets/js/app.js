@@ -3,6 +3,7 @@ class SailScoreDB {
   constructor() {
     this.dbName = 'SailScoreDB';
     this.conn = this.openDB();
+    this.cached = true;
     return this;
   }
   
@@ -27,26 +28,31 @@ class SailScoreDB {
     };
     return request;
   }
+  
   createClubStore(db){
     const objectStore = db.createObjectStore("Club", { keyPath: "id", autoIncrement: true } ); 
     objectStore.createIndex("id", "id", { unique: true });
     objectStore.createIndex("name", "name", { unique: false });
   }
+  
   createRegattasStore(db){
     const objectStore = db.createObjectStore("Regattas", { keyPath: "id", autoIncrement: true } ); 
     objectStore.createIndex("id", "id", { unique: true });
     objectStore.createIndex("name", "name", { unique: false });
   }
+  
   createRacesStore(db){
     const objectStore = db.createObjectStore("Races", { keyPath: "id", autoIncrement: true } ); 
     objectStore.createIndex("id", "id", { unique: true });
     objectStore.createIndex("name", "name", { unique: false });
   }
+  
   createCompetitorsStore(db){
     const objectStore = db.createObjectStore("Competitors", { keyPath: "id", autoIncrement: true } ); 
     objectStore.createIndex("id", "id", { unique: true });
     objectStore.createIndex("name", "name", { unique: false });
   }
+  
   createSailorsStore(db){
     const objectStore = db.createObjectStore("Sailors", { keyPath: "id", autoIncrement: true } ); 
     objectStore.createIndex("id", "id", { unique: true });
@@ -55,11 +61,19 @@ class SailScoreDB {
     objectStore.createIndex("lastname", "lastname", { unique: false });
     //  objectStore.createIndex("fullname", ["firstname", "lastname", birtDate], { unique: true });
   }
+  
   createBoatClassesStore(db){
     const objectStore = db.createObjectStore("BoatClasses", { keyPath: "id", autoIncrement: true } ); 
     objectStore.createIndex("id", "id", { unique: true });
     objectStore.createIndex("name", "name", { unique: false });
     importPotsmouthYardstick();
+  }
+  
+  set cached( c ){
+    this._cached = {club:[], regatta:[], sailor:[], competitor:[], race:[], boatclass:[]};
+  }
+  get cached(){
+    return this._cached;
   }
 }
 const sailScoreDB = new SailScoreDB(); 
@@ -219,9 +233,24 @@ class BoatClassSingleton {
       const transaction = db.transaction(["BoatClasses"], "readonly");
       const store = transaction.objectStore("BoatClasses");
       const res = store.getAll();
-      if (fn){
-        res.onsuccess = fn;
+      if(fn){
+        res.onsuccess = fn
       }
+      let p = new Promise(function (success, fail){
+          function success(e){
+            sailScoreDB.cached.boatclass = e.target.result;
+          }
+          function fail(e) {
+            console.log(e);
+          }
+      }).then( function(e){
+          if(fn)fn.call();
+        }, 
+        function(e) {
+          console.log(e);
+        });
+      //res.onsuccess = p;
+     
     };
   }
 }
@@ -359,6 +388,46 @@ function importPotsmouthYardstick(){
 
 /* FRONT END FUNCTIONS */
 
+function renderSelectOptions(target, proto = Object, keys = ['id', 'name'], fn){
+  this.target = target;
+  this.object_name = proto.name.toLowerCase();
+  this.keys = keys;
+  let p = new Promise(fn);
+  
+  p.then((e) => {
+      let res = e.target.result;
+      //  res = [];
+      if(0 === res.length) {
+        return [``];
+      }else{
+        //  this.keys = Object.keys(new proto(res[0]));
+        return res.map(
+          (d) => {
+            let b = new proto(d);
+            const object_name = this.object_name;
+            let k_val = b[this.keys[0]];
+            let k_name = b[this.keys[1]];
+            let td = `<option value="${k_val}">${k_name}</option>`;
+            return `${td}`;
+          });
+      }
+    }).then((bc) => {
+      const object_name = this.object_name;
+      bc.unshift( `<option value=""> ... </option>` );
+      this.target.innerHTML = bc.join('\n');
+    });
+}
+
+function renderSelectSailor(){
+  const target = document.querySelector('select[name="sailor"]');
+  if(target){
+    renderSelectOptions(target, 
+                      Sailor, 
+                      ['id', 'fullName'], 
+                      sailorSingleton.getAll);
+  }
+}
+
 function renderTable(target, proto = Object, fn){
   this.target = target;
   this.object_name = proto.name.toLowerCase();
@@ -375,7 +444,7 @@ function renderTable(target, proto = Object, fn){
         return res.map(
           (d) => {
             let b = new proto(d);
-            let object_name = proto.name.toLowerCase();
+            const object_name = this.object_name;
             let td = this.keys.map((h) => `<span class="td ${h}">${b[h]}</span>`).join('');
             return `<div class="tr">${td}<span class="td actions">
         <button type="button" data-role="edit_${object_name}" data-id="${b.id}"> &#9998; </button>
@@ -427,7 +496,7 @@ function add_sailor(e) {
       <div class="field-group">
         <label>FIV num.</label> <div class="form-control"><input type="number" name="fiv" /></div>
       </div>
-      <div class="field-group">
+      <div class="form-buttons">
         <input type="hidden" name="id" />
         <button type="reset">Reset</button> <button type="button" data-role="save_sailor">Save</button>
       </div>
@@ -460,7 +529,7 @@ function edit_sailor(e) {
       <div class="field-group">
         <label>FIV num.</label> <div class="form-control"><input type="number" name="fiv" value="${s.fiv}" /></div>
       </div>
-      <div class="popup-buttons">
+      <div class="form-buttons">
         <input type="hidden" name="id" value="${s.id}" />
         <button type="reset">Reset</button> <button type="button" data-role="save_sailor">Save</button>
       </div>
@@ -487,6 +556,7 @@ function showBoatClasses(){
 }
 
 showBoatClasses();
+document.querySelector('[data-role="add_boatclass"]').addEventListener('click', add_boatclass);
 
 function add_boatclass(e) {
   const title = 'Add Boat Class';
@@ -497,7 +567,7 @@ function add_boatclass(e) {
       <div class="field-group">
         <label>Rating</label> <div class="form-control"><input type="text" name="rating" /></div>
       </div>
-      <div class="field-group">
+      <div class="form-buttons">
         <input type="hidden" name="id" />
         <button type="reset">Reset</button> <button type="button" data-role="save_boatclass">Save</button>
       </div>
@@ -517,7 +587,7 @@ function edit_boatclass(e) {
       <div class="field-group">
         <label>Rating</label> <div class="form-control"><input type="text" name="rating" value="${s.rating}" /></div>
       </div>
-      <div class="popup-buttons">
+      <div class="form-buttons">
         <input type="hidden" name="id" value="${s.id}" />
         <button type="reset">Reset</button> <button type="button" data-role="save_boatclass">Save</button>
       </div>

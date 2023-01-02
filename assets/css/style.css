@@ -39,8 +39,8 @@ a {
 
 .data-table {
   min-width: fit-content;
-  border-top: 1px solid #aaa;
-  border-left: 1px solid #aaa;
+  border-top: 1px solid #ccc;
+  border-left: 1px solid #ccc;
   margin-bottom: 1rem;
 }
 .data-table > .tr {
@@ -62,8 +62,8 @@ a {
 .data-table > .tr > .th {
   display: flex;
   align-items: center;
-  border-bottom: 1px solid #aaa;
-  border-right: 1px solid #aaa;
+  border-bottom: 1px solid #ccc;
+  border-right: 1px solid #ccc;
   padding: 8px 4px;
   font-weight: bold;
   text-align: left;
@@ -71,8 +71,8 @@ a {
 .data-table > .tr > .td {
   display: flex;
   align-items: center;
-  border-bottom: 1px solid #aaa;
-  border-right: 1px solid #aaa;
+  border-bottom: 1px solid #ccc;
+  border-right: 1px solid #ccc;
   padding: 4px;
   text-align: left;
 }
@@ -195,7 +195,7 @@ div[data-list="sailors"] .sailor span.actions {
 .field-group {
   margin-bottom: 15px;
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   column-gap: 10px;
 }
 .field-group label {
@@ -203,14 +203,25 @@ div[data-list="sailors"] .sailor span.actions {
 }
 .field-group .form-control {
   flex-basis: 70%;
+  max-width: 220px;
 }
 .field-group input, .field-group select {
   font-size: 1.1rem;
   width: 100%;
-  display:block;
+  height: 100%;
+  display: block;
 }
 .field-group input[type="date"] {
   width: 100%; 
+}
+.form-buttons {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+}
+.form-buttons button {
+  padding: 4px 8px;
+  min-width: 60px;
 }
 /* POP CONFIRM */
 
