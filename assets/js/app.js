@@ -179,6 +179,35 @@ class BoatClassSingleton {
       console.log("boatClass salvata con successo nel database.");
     };
   }
+  get (id, fn) {
+    const request = sailScoreDB.openDB();
+      request.onsuccess = function(event) {
+      const db = event.target.result;
+      const transaction = db.transaction(["BoatClasses"], "readonly");
+      const store = transaction.objectStore("BoatClasses");
+      const res = store.get(id);
+      
+      if (fn){
+        res.onsuccess = fn;
+      }
+      console.log("BoatClass recuperato con successo.");
+    }; 
+  }
+  deleteBoatClass(id, fn){
+    const request = sailScoreDB.openDB();
+      request.onsuccess = function(event) {
+      const db = event.target.result;
+      const transaction = db.transaction(["BoatClasses"], "readwrite");
+      const store = transaction.objectStore("BoatClasses");
+      const res = store.delete(id);
+      
+      if (fn){
+        res.onsuccess = fn;
+      }
+      console.log("BoatClass eliminato con successo.");
+    };
+    
+  }
   getAll(fn){
     const request = sailScoreDB.openDB();
 
@@ -240,7 +269,6 @@ class SailorSingleton {
       }
       console.log("Sailor recuperato con successo.");
     };
-
   };
   deleteSailor(id, fn){
     const request = sailScoreDB.openDB();
@@ -331,6 +359,249 @@ function importPotsmouthYardstick(){
 
 /* FRONT END FUNCTIONS */
 
+function renderTable(target, proto = Object, fn){
+  this.target = target;
+  this.object_name = proto.name.toLowerCase();
+  this.keys = [];
+  let p = new Promise(fn);
+  
+  p.then((e) => {
+      let res = e.target.result;
+      //  res = [];
+      if(0 === res.length) {
+        return [`<div>Sorry, nothing to show!</div>`];
+      }else{
+        this.keys = Object.keys(new proto(res[0]));
+        return res.map(
+          (d) => {
+            let b = new proto(d);
+            let object_name = proto.name.toLowerCase();
+            let td = this.keys.map((h) => `<span class="td ${h}">${b[h]}</span>`).join('');
+            return `<div class="tr">${td}<span class="td actions">
+        <button type="button" data-role="edit_${object_name}" data-id="${b.id}"> &#9998; </button>
+        <button type="button" data-role="delete_${object_name}" data-id="${b.id}"> &#128465;&#65039; </button>
+      </span></div>`;});
+      }
+    }).then((bc) => {
+      const object_name = this.object_name;
+      let headers = this.keys.map((h) => `<span class="th ${h}">${h}</span>`).join('');
+      bc.unshift(`<div class="tr thead">${headers}<span class="th actions"></span></div>`);
+      this.target.innerHTML = '<div class="data-table">' + bc.join('\n') + '</div>';
+      document.querySelectorAll(`[data-role="edit_${object_name}"]`).forEach(b => b.addEventListener('click', window[`edit_${object_name}`]));
+      document.querySelectorAll(`[data-role="delete_${object_name}"]`).forEach(b => b.addEventListener('click', window[`delete_${object_name}`]));
+    });
+}
+
+/* SAILORS */
+
+function showSailors(e){
+  let tag_sailors = document.querySelector('[data-list="sailors"]');
+  let sailors = e.currentTarget.result;
+  tag_sailors.innerHTML = '';
+  sailors.forEach(d => {const s = new Sailor(d); tag_sailors.insertAdjacentHTML('beforeEnd',`<div class="sailor">
+      <span class="fullname">${s.fullName}</span> 
+      <span class="birthdate"> ${s.birthDate} </span>
+      <span class="fiv">fiv: ${s.fiv}</span>
+      <span class="actions">
+        <button type="button" data-role="edit_sailor" data-id="${s.id}"> &#9998; </button>
+        <button type="button" data-role="delete_sailor" data-id="${s.id}"> &#128465;&#65039; </button>
+      </span>
+    </div>`);});
+  document.querySelectorAll('[data-role="edit_sailor"]').forEach(b => b.addEventListener('click', edit_boatclass));
+  document.querySelectorAll('[data-role="delete_sailor"]').forEach(b => b.addEventListener('click', delete_sailor));
+}
+
+
+function add_sailor(e) {
+  const title = 'Add Sailor';
+  const form = `<form data-role="form-sailor">
+      <div class="field-group">
+        <label>Firstname</label> <div class="form-control"><input type="text" name="firstname" /></div>
+      </div>
+      <div class="field-group">
+        <label>Lastname</label> <div class="form-control"><input type="text" name="lastname" /></div>
+      </div>
+      <div class="field-group">
+        <label>BirthDate</label> <div class="form-control"><input type="date" name="birthdate" /></div>
+      </div>
+      <div class="field-group">
+        <label>FIV num.</label> <div class="form-control"><input type="number" name="fiv" /></div>
+      </div>
+      <div class="field-group">
+        <input type="hidden" name="id" />
+        <button type="reset">Reset</button> <button type="button" data-role="save_sailor">Save</button>
+      </div>
+    </form>`;
+  
+  addToPopup(title, form);
+  document.querySelector('[data-role="save_sailor"]').addEventListener('click', save_sailor);
+}
+function delete_sailor(e){
+  const sailor_id = Number(e.currentTarget.getAttribute('data-id'));  
+  pop.confirm('Delete Sailor', 'Really want delete the record?', function(){
+    sailorSingleton.deleteSailor(sailor_id, function(){sailorSingleton.getAll(showSailors);});
+  });
+};
+
+function edit_sailor(e) {
+  sailorSingleton.get(Number(e.currentTarget.getAttribute('data-id')), function(ev){
+    const title = 'Edit Sailor';
+    let s = ev.currentTarget.result;
+    const form = `<form data-role="form-sailor">
+      <div class="field-group">
+        <label>Firstname</label> <div class="form-control"><input type="text" name="firstname" value="${s.firstname}" /></div>
+      </div>
+      <div class="field-group">
+        <label>Lastname</label> <div class="form-control"><input type="text" name="lastname" value="${s.lastname}" /></div>
+      </div>
+      <div class="field-group">
+        <label>BirthDate</label> <div class="form-control"><input type="date" name="birthdate" value="${s.birthdate}" /></div>
+      </div>
+      <div class="field-group">
+        <label>FIV num.</label> <div class="form-control"><input type="number" name="fiv" value="${s.fiv}" /></div>
+      </div>
+      <div class="popup-buttons">
+        <input type="hidden" name="id" value="${s.id}" />
+        <button type="reset">Reset</button> <button type="button" data-role="save_sailor">Save</button>
+      </div>
+    </form>`;
+    addToPopup(title, form);
+    document.querySelector('[data-role="save_sailor"]').addEventListener('click', save_sailor);
+  });
+}
+
+function save_sailor(e){
+  const fields = e.currentTarget.parentElement.parentElement.querySelectorAll('input[name]');
+  const ff = [...fields].map(f => ({name: f.name, value: f.value}));
+  const sailor = new Sailor();
+  sailor._setFromArray = ff;
+  sailorSingleton.saveSailor(sailor);
+  sailorSingleton.getAll(showSailors);
+  removeFromPopup();
+}
+
+/* BoatClasses */
+
+function showBoatClasses(){
+  renderTable(document.querySelector('[data-list="boatclass"]'), BoatClass, boatClassSingleton.getAll);
+}
+
+showBoatClasses();
+
+function add_boatclass(e) {
+  const title = 'Add Boat Class';
+  const form = `<form data-role="form-sailor">
+      <div class="field-group">
+        <label>Name</label> <div class="form-control"><input type="text" name="name" /></div>
+      </div>
+      <div class="field-group">
+        <label>Rating</label> <div class="form-control"><input type="text" name="rating" /></div>
+      </div>
+      <div class="field-group">
+        <input type="hidden" name="id" />
+        <button type="reset">Reset</button> <button type="button" data-role="save_boatclass">Save</button>
+      </div>
+    </form>`;
+  addToPopup(title, form);
+  document.querySelector('[data-role="save_boatclass"]').addEventListener('click', save_boatclass);
+}
+
+function edit_boatclass(e) {
+  boatClassSingleton.get(Number(e.currentTarget.getAttribute('data-id')), function(ev){
+    const title = 'Edit Boat Class';
+    let s = ev.currentTarget.result;
+    const form = `<form data-role="form-sailor">
+      <div class="field-group">
+        <label>Name</label> <div class="form-control"><input type="text" name="name" value="${s.name}" /></div>
+      </div>
+      <div class="field-group">
+        <label>Rating</label> <div class="form-control"><input type="text" name="rating" value="${s.rating}" /></div>
+      </div>
+      <div class="popup-buttons">
+        <input type="hidden" name="id" value="${s.id}" />
+        <button type="reset">Reset</button> <button type="button" data-role="save_boatclass">Save</button>
+      </div>
+    </form>`;
+    addToPopup(title, form);
+    document.querySelector('[data-role="save_boatclass"]').addEventListener('click', save_boatclass);
+  });
+}
+
+function delete_boatclass(e){
+  const item_id = Number(e.currentTarget.getAttribute('data-id'));  
+  pop.confirm('Delete Boat Class', 'Really want delete the record?', function(){
+    boatClassSingleton.deleteBoatClass(item_id, function(){boatClassSingleton.getAll(showBoatClasses);});
+  });
+};
+
+function save_boatclass(e){
+  const fields = e.currentTarget.parentElement.parentElement.querySelectorAll('input[name]');
+  const ff = [...fields].map(f => ({name: f.name, value: f.value}));
+  const boatClass = new BoatClass();
+  boatClass._setFromArray = ff;
+  boatClassSingleton.saveBoatClass(boatClass);
+  boatClassSingleton.getAll(showBoatClasses);
+  removeFromPopup();
+}
+
+var pop = {
+  response : function(res){
+    if(true === res){
+      if('function'=== typeof pop.fn_yes){
+        pop.fn_yes();
+      }
+    }else{
+      if('function'=== typeof pop.fn_no){
+        pop.fn_no();
+      }
+    }
+    removeFromPopup();
+  },
+  title: '',
+  fn_yes: null,
+  fn_no: null,
+  confirm: function(tit='', msg='', fn_yes, fn_no){
+    pop.title = tit;
+    let html = `<div class="confirm"><div class="confirm-question">${msg}</div><div class="popup-buttons">
+        <button type="button" onclick="pop.response(true)"> Yes </button>
+        <button type="button" onclick="pop.response(false)"> No </button>
+      </div></div>`;
+    if( fn_yes ){
+      pop.fn_yes = fn_yes;
+    }
+    if( fn_no ){
+      pop.fn_no = fn_no;
+    }
+    addToPopup(pop.title, html);
+  }  
+};
+
+function addToPopup(title, html){
+  let w = document.querySelector('.popup-fixed');
+  w.querySelector('.popup-title').innerHTML = title;
+  w.querySelector('.popup-content').innerHTML = html;
+  w.classList.remove('hidden');
+}
+
+function removeFromPopup(){
+  let w = document.querySelector('.popup-fixed');
+  w.querySelector('.popup-content').innerHTML = '';
+  w.classList.add('hidden');
+}
+
+sailorSingleton.getAll(showSailors);
+document.querySelector('[data-role="add_sailor"]').addEventListener('click', add_sailor);
+document.querySelector('#global-nav .toggle-menu').addEventListener('click', (e) => {
+  const c = document.querySelector('#global-nav > ul');
+  if(Boolean(c.getAttribute('aria-expanded')) === false){
+    c.setAttribute('aria-expanded', 'true');
+    e.currentTarget.classList.add('opened');
+  }else{
+    c.setAttribute('aria-expanded', '');
+    e.currentTarget.classList.remove('opened');
+  }
+});
+
 function show_started_competitors(){
   let competitors = [
     {name: "Lorenzo Serretti", sail_number: "205262", boat_class: "ILCA 6"},
@@ -363,188 +634,7 @@ function show_started_competitors(){
 }
 show_started_competitors();
 
-function showSailors(e){
-  let tag_sailors = document.querySelector('[data-list="sailors"]');
-  let sailors = e.currentTarget.result;
-  tag_sailors.innerHTML = '';
-  sailors.forEach(d => {const s = new Sailor(d); tag_sailors.insertAdjacentHTML('beforeEnd',`<div class="sailor">
-      <span class="fullname">${s.fullName}</span> 
-      <span class="birthdate"> ${s.birthDate} </span>
-      <span class="fiv">fiv: ${s.fiv}</span>
-      <span class="actions">
-        <button type="button" data-role="edit_sailor" data-id="${s.id}"> &#9998; </button>
-        <button type="button" data-role="delete_sailor" data-id="${s.id}"> &#128465;&#65039; </button>
-      </span>
-    </div>`);});
-  document.querySelectorAll('[data-role="edit_sailor"]').forEach(b => b.addEventListener('click', edit_sailor));
-  document.querySelectorAll('[data-role="delete_sailor"]').forEach(b => b.addEventListener('click', delete_sailor));
-}
 
-
-function add_sailor(e) {
-  const form = `<form data-role="form-sailor">
-      <div class="field-group">
-        <label>Firstname</label> <div class="form-control"><input type="text" name="firstname" /></div>
-      </div>
-      <div class="field-group">
-        <label>Lastname</label> <div class="form-control"><input type="text" name="lastname" /></div>
-      </div>
-      <div class="field-group">
-        <label>BirthDate</label> <div class="form-control"><input type="date" name="birthdate" /></div>
-      </div>
-      <div class="field-group">
-        <label>FIV num.</label> <div class="form-control"><input type="number" name="fiv" /></div>
-      </div>
-      <div class="field-group">
-        <input type="hidden" name="id" />
-        <button type="reset">Reset</button> <button type="button" data-role="save_sailor">Save</button>
-      </div>
-    </form>`;
-  addToPopup(form);
-  document.querySelector('[data-role="save_sailor"]').addEventListener('click', save_sailor);
-}
-function delete_sailor(e){
-  const sailor_id = Number(e.currentTarget.getAttribute('data-id'));  
-  pop.confirm('Really want delete the record?', function(){
-    sailorSingleton.deleteSailor(sailor_id, function(){sailorSingleton.getAll(showSailors);});
-  });
-};
-
-function edit_sailor(e) {
-  sailorSingleton.get(Number(e.currentTarget.getAttribute('data-id')), function(ev){
-    let s = ev.currentTarget.result;
-    const form = `<form data-role="form-sailor">
-      <div class="field-group">
-        <label>Firstname</label> <div class="form-control"><input type="text" name="firstname" value="${s.firstname}" /></div>
-      </div>
-      <div class="field-group">
-        <label>Lastname</label> <div class="form-control"><input type="text" name="lastname" value="${s.lastname}" /></div>
-      </div>
-      <div class="field-group">
-        <label>BirthDate</label> <div class="form-control"><input type="date" name="birthdate" value="${s.birthdate}" /></div>
-      </div>
-      <div class="field-group">
-        <label>FIV num.</label> <div class="form-control"><input type="number" name="fiv" value="${s.fiv}" /></div>
-      </div>
-      <div class="popup-buttons">
-        <input type="hidden" name="id" value="${s.id}" />
-        <button type="reset">Reset</button> <button type="button" data-role="save_sailor">Save</button>
-      </div>
-    </form>`;
-  addToPopup(form);
-  document.querySelector('[data-role="save_sailor"]').addEventListener('click', save_sailor);
-  });
-}
-
-function save_sailor(e){
-  const fields = e.currentTarget.parentElement.parentElement.querySelectorAll('input[name]');
-  const ff = [...fields].map(f => ({name: f.name, value: f.value}));
-  
-  //const vs = [...fields].map(f => [f.name, f.value]);
-  //const sailor = Object.fromEntries( new Map(vs));
-  const sailor = new Sailor();
-  sailor._setFromArray = ff;
-  sailorSingleton.saveSailor(sailor);
-  sailorSingleton.getAll(showSailors);
-  removeFromPopup();
-}
-
-function renderBoatClasses(target){
-  this.target = target;
-  this.keys = [];
-  let p = new Promise(boatClassSingleton.getAll);
-  p.then((e) => {
-      return e.target.result.map(
-        (b) => `<div data-id="${b.id}"><span>${b.name}</span> <span>${b.rating}</span></div>`);
-    })
-    .then((bc) => { bc.unshift(`<div data-role="thead"><span>name</span> <span>rating</span></div>`);
-      this.target.innerHTML = bc.join('\n');} );
-}
-
-function renderTable(target, object_name = '', fn){
-  this.target = target;
-  this.keys = [];
-  let p = new Promise(fn);
-  
-  p.then((e) => {
-      let res = e.target.result;
-      //  res = [];
-      if(0 === res.length) {
-        return [`<div>Sorry, nothing to show!</div>`];
-      }else{
-        this.keys = Object.keys(res[0]);
-        return res.map(
-          (b) => {
-            let td = this.keys.map((h) => `<span class="td ${h}">${b[h]}</span>`).join('');
-            return `<div class="tr">${td}<span class="td actions">
-        <button type="button" data-role="edit_${object_name}" data-id="${b.id}"> &#9998; </button>
-        <button type="button" data-role="delete_${object_name}" data-id="${b.id}"> &#128465;&#65039; </button>
-      </span></div>`;});
-      }
-    }).then((bc) => { 
-      let headers = this.keys.map((h) => `<span class="th ${h}">${h}</span>`).join('');
-      bc.unshift(`<div class="tr thead">${headers}<span class="th actions"></span></div>`);
-      this.target.innerHTML = '<div class="data-table">' + bc.join('\n') + '</div>';
-    });
-}
-
-var pop = {
-  response : function(res){
-    if(true === res){
-      if('function'=== typeof pop.fn_yes){
-        pop.fn_yes();
-      }
-    }else{
-      if('function'=== typeof pop.fn_no){
-        pop.fn_no();
-      }
-    }
-    removeFromPopup();
-  },
-  fn_yes: null,
-  fn_no: null,
-  confirm : function(msg='', fn_yes, fn_no){
-    let html = `<div class="confirm"><div class="confirm-question">${msg}</div><div class="popup-buttons">
-        <button type="button" onclick="pop.response(true)"> Yes </button>
-        <button type="button" onclick="pop.response(false)"> No </button>
-      </div></div>`;
-    if( fn_yes ){
-      pop.fn_yes = fn_yes;
-    }
-    if( fn_no ){
-      pop.fn_no = fn_no;
-    }
-    addToPopup(html);
-    
-  }  
-};
-
-
-
-function addToPopup(html){
-  let w = document.querySelector('.popup-fixed');
-  w.querySelector('.popup-content').innerHTML = html;
-  w.classList.remove('hidden');
-}
-
-function removeFromPopup(){
-  let w = document.querySelector('.popup-fixed');
-  w.querySelector('.popup-content').innerHTML = '';
-  w.classList.add('hidden');
-}
-
-sailorSingleton.getAll(showSailors);
-document.querySelector('[data-role="add_sailor"]').addEventListener('click', add_sailor);
-document.querySelector('#global-nav .toggle-menu').addEventListener('click', (e) => {
-  const c = document.querySelector('#global-nav > ul');
-  if(Boolean(c.getAttribute('aria-expanded')) === false){
-    c.setAttribute('aria-expanded', 'true');
-    e.currentTarget.classList.add('opened');
-  }else{
-    c.setAttribute('aria-expanded', '');
-    e.currentTarget.classList.remove('opened');
-  }
-});
 
 /* WORKER */
 if ("serviceWorker" in navigator) {
