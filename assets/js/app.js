@@ -233,22 +233,15 @@ class BoatClassSingleton {
       const transaction = db.transaction(["BoatClasses"], "readonly");
       const store = transaction.objectStore("BoatClasses");
       const res = store.getAll();
-      if(fn){
-        res.onsuccess = fn
+      
+       if(fn){
+        res.onsuccess = fn;
       }
-      let p = new Promise(function (success, fail){
-          function success(e){
-            sailScoreDB.cached.boatclass = e.target.result;
-          }
-          function fail(e) {
-            console.log(e);
-          }
-      }).then( function(e){
-          if(fn)fn.call();
-        }, 
-        function(e) {
-          console.log(e);
-        });
+      
+      /*
+let pp = new Promise(function(step1){step1(7); c++; console.log('step1-'+c)}).then(function(step2){c++; console.log('step2-'+c); return step2;});
+      */
+      
       //res.onsuccess = p;
      
     };
@@ -599,9 +592,12 @@ function edit_boatclass(e) {
 
 function delete_boatclass(e){
   const item_id = Number(e.currentTarget.getAttribute('data-id'));  
-  pop.confirm('Delete Boat Class', 'Really want delete the record?', function(){
-    boatClassSingleton.deleteBoatClass(item_id, function(){boatClassSingleton.getAll(showBoatClasses);});
-  });
+  pop.confirm('Delete Boat Class', 'Really want delete the record?',
+    function(){
+      boatClassSingleton.deleteBoatClass(item_id, function(){
+          boatClassSingleton.getAll(showBoatClasses);
+        });
+    });
 };
 
 function save_boatclass(e){
