@@ -30,11 +30,9 @@
             </div>
           </div>
           <div class="container">
-            
             <h1>Sail Score</h1>
           </div>       
         </header>
-      
         <main data-block="club">
           <div class="container">
             <article>
@@ -103,9 +101,21 @@
                 </article>
               </div>
         </section>
-      <section class="popup-fixed hidden"><div class="popup-wrapper"><div class="popup-header"><div class="popup-title"></div><a class="btn-close" onclick="removeFromPopup()"></a></div><div class="popup-content"></div></div></section>
+        <section data-block="import-export">
+          <div class="container">
+             <h2>Import export data</h2>
+              <div class="field-group">
+                <div class="export-buttons">
+                  <button type="button" class="btn" onclick="exportAllData()"> Export all data </button>
+                  <button type="button" class="btn" onclick="importAllData()"> Import all data </button>
+                  <button type="button" class="btn" onclick="importPortsmouthYardstick()"> Import Portsmouth Yardstick </button>
+                </div>
+              </div>
+          </div>
+        </section>
+        <section class="popup-fixed hidden"><div class="popup-wrapper"><div class="popup-header"><div class="popup-title"></div><a class="btn-close" onclick="removeFromPopup()"></a></div><div class="popup-content"></div></div></section>
         <footer class="page-footer">
-            <div class="container"></div>
+          <div class="container"></div>
         </footer>
         <script src="assets/js/app.js"></script>
     </body>

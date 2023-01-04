@@ -1,6 +1,8 @@
 /* DATABASE */
 class SailScoreDB {
+  //#cached = {};
   constructor() {
+    Object.defineProperty(this, '_cached', {value: {}, writable: true, enumerable: false, configurable: true });
     this.dbName = 'SailScoreDB';
     this.conn = this.openDB();
     this.cached = true;
@@ -30,50 +32,77 @@ class SailScoreDB {
   }
   
   createClubStore(db){
-    const objectStore = db.createObjectStore("Club", { keyPath: "id", autoIncrement: true } ); 
-    objectStore.createIndex("id", "id", { unique: true });
-    objectStore.createIndex("name", "name", { unique: false });
+    const o = db.createObjectStore("Club", { keyPath: "id", autoIncrement: true } ); 
+    o.createIndex("id", "id", { unique: true });
+    o.createIndex("name", "name", { unique: false });
   }
   
   createRegattasStore(db){
-    const objectStore = db.createObjectStore("Regattas", { keyPath: "id", autoIncrement: true } ); 
-    objectStore.createIndex("id", "id", { unique: true });
-    objectStore.createIndex("name", "name", { unique: false });
+    const o = db.createObjectStore("Regattas", { keyPath: "id", autoIncrement: true } ); 
+    o.createIndex("id", "id", { unique: true });
+    o.createIndex("name", "name", { unique: false });
   }
   
   createRacesStore(db){
-    const objectStore = db.createObjectStore("Races", { keyPath: "id", autoIncrement: true } ); 
-    objectStore.createIndex("id", "id", { unique: true });
-    objectStore.createIndex("name", "name", { unique: false });
+    const o = db.createObjectStore("Races", { keyPath: "id", autoIncrement: true } ); 
+    o.createIndex("id", "id", { unique: true });
+    o.createIndex("name", "name", { unique: false });
   }
   
   createCompetitorsStore(db){
-    const objectStore = db.createObjectStore("Competitors", { keyPath: "id", autoIncrement: true } ); 
-    objectStore.createIndex("id", "id", { unique: true });
-    objectStore.createIndex("name", "name", { unique: false });
+    const o = db.createObjectStore("Competitors", { keyPath: "id", autoIncrement: true } ); 
+    o.createIndex("id", "id", { unique: true });
+    o.createIndex("name", "name", { unique: false });
   }
   
   createSailorsStore(db){
-    const objectStore = db.createObjectStore("Sailors", { keyPath: "id", autoIncrement: true } ); 
-    objectStore.createIndex("id", "id", { unique: true });
-    objectStore.createIndex("fiv", "fiv", { unique: false });
-    objectStore.createIndex("firstname", "firstname", { unique: false });
-    objectStore.createIndex("lastname", "lastname", { unique: false });
-    //  objectStore.createIndex("fullname", ["firstname", "lastname", birtDate], { unique: true });
+    const o = db.createObjectStore("Sailors", { keyPath: "id", autoIncrement: true } ); 
+    o.createIndex("id", "id", { unique: true });
+    o.createIndex("fiv", "fiv", { unique: false });
+    o.createIndex("firstname", "firstname", { unique: false });
+    o.createIndex("lastname", "lastname", { unique: false });
+    //  o.createIndex("fullname", ["firstname", "lastname", birtDate], { unique: true });
   }
   
   createBoatClassesStore(db){
-    const objectStore = db.createObjectStore("BoatClasses", { keyPath: "id", autoIncrement: true } ); 
-    objectStore.createIndex("id", "id", { unique: true });
-    objectStore.createIndex("name", "name", { unique: false });
+    const o = db.createObjectStore("BoatClasses", { keyPath: "id", autoIncrement: true } ); 
+    o.createIndex("id", "id", { unique: true });
+    o.createIndex("name", "name", { unique: false });
     importPotsmouthYardstick();
   }
   
   set cached( c ){
-    this._cached = {club:[], regatta:[], sailor:[], competitor:[], race:[], boatclass:[]};
+    if(0 === Object.keys(this._cached).length){
+      this._cached = {club:[], regatta:[], sailor:[], competitor:[], race:[], boatclass:[]};
+    }
   }
   get cached(){
-    return this._cached;
+    const _c = this._cached; 
+    return { 
+      sailor: function(s){ return _c.sailor.filter( (x) => 
+              x.fullName.toLowerCase().indexOf(s.toLowerCase()) > -1 ||
+              x.fiv.toString().indexOf(s) > -1 )},
+      boatclass: function(s){ return _c.boatclass.filter( (x) => x.name.toLowerCase().indexOf(s.toLowerCase()) > -1 )},
+      competitor: function(s){ return _c.competitor.filter( (x) => x.fullName.toLowerCase().indexOf(s.toLowerCase()) > -1 )}
+    }
+  }
+  set club( c ){
+    this._cached.club = c;
+  }
+  set regatta( c ){
+    this._cached.regatta = c;
+  }
+  set sailor( c ){
+    this._cached.sailor = c;
+  }
+  set competitor( c ){
+    this._cached.competitor = c;
+  }
+   set race( c ){
+    this._cached.race = c;
+  }
+   set boatclass( c ){
+    this._cached.boatclass = c;
   }
 }
 const sailScoreDB = new SailScoreDB(); 
@@ -145,12 +174,36 @@ class Sailor extends entity {
   }
 }
 
-class Competitor {
-  constructor(helm, crew, boat, sailNumber, id = null) {
-    if(id) this.id = new Number(id);
-    this.helm = helm;
-    this.crew = crew;
-    this.sailNumber = stripHtml(sailNumber);
+class Competitor extends entity {
+  constructor(c = {regatta_id: 0, helm_id: 0, crew_ids:[], boat_id:null, sailNumber:'', id: null}) {
+    super(c);
+    //this.defineProperty = {_data: {value: {}, writable: true, enumerable: true, configurable: true}};
+    this['#data'] = {};
+    this.regatta_id = c.regatta_id;
+    this.helm_id = c.helm_id;
+    this.crew_ids = c.crew_ids;
+    this.sailNumber = stripHtml(c.sailNumber);
+    this.helm = {};
+    this.crew = [];
+  }
+  set _data(o){
+    let n = o;
+  }
+  get _data(){
+    const d = Object.assign({}, this['#data']);
+    return d;
+  }
+  set helm(o){
+    this['#data'].helm = o;
+  }
+  get helm(){
+    return this['#data'].helm;
+  }
+  set crew(o){
+    this['#data'].crew = o;
+  }
+  get crew(){
+    return this['#data'].crew;
   }
 }
 
@@ -233,17 +286,13 @@ class BoatClassSingleton {
       const transaction = db.transaction(["BoatClasses"], "readonly");
       const store = transaction.objectStore("BoatClasses");
       const res = store.getAll();
-      
-       if(fn){
-        res.onsuccess = fn;
-      }
-      
-      /*
-let pp = new Promise(function(step1){step1(7); c++; console.log('step1-'+c)}).then(function(step2){c++; console.log('step2-'+c); return step2;});
-      */
-      
-      //res.onsuccess = p;
-     
+      res.onsuccess = (e) => { 
+        sailScoreDB.boatclass = e.target.result.map((b) => new BoatClass(b));
+        if(fn){
+          fn(e);
+        }
+        console.log("BoatClass recuperati con successo.");
+      };
     };
   }
 }
@@ -318,10 +367,13 @@ class SailorSingleton {
       const transaction = db.transaction(["Sailors"], "readonly");
       const store = transaction.objectStore("Sailors");
       const res = store.getAll();
+      res.onsuccess = (e) => { 
+        sailScoreDB.sailor = e.target.result.map((b) => new Sailor(b));
+        if(fn){
+          fn(e);
+        }
+      };
 
-      if (fn){
-        res.onsuccess = fn;
-      }
       console.log("Sailors recuperati con successo.");
     };
   }
@@ -354,7 +406,7 @@ function stripHtml(str){
   }
 }
 
-/* IMPORT FUNCTIONS */
+/* IMPORT EXPORT FUNCTIONS */
 
 function importPotsmouthYardstick(){
   const url = 'https://andrea-buzz.github.io/SailScore/data/py-list.json';
@@ -379,7 +431,68 @@ function importPotsmouthYardstick(){
   xhr.send();
 }
 
+function exportAllData() {
+  const r = sailScoreDB.openDB();
+  var data = {};
+  let tables = [];
+  let db;
+  r.onsuccess = (e) => {
+    db = e.target.result;
+    tables = [...e.target.result.objectStoreNames];
+    tables.forEach((n) => data[n] = null );
+    tables.forEach((n) => getTable(n) );
+    
+  };
+  function getTable(tname){
+    const r2 = sailScoreDB.openDB();
+    r2.onerror = function(e1) {
+      console.log("Errore nell'apertura del database: " + e1.target.errorCode);
+    };
+    r2.onsuccess = (e2) => {
+      const db = e2.target.result;
+      const t = db.transaction([tname], "readonly");
+      const s = t.objectStore(tname);
+      const q = s.getAll();
+      q.onsuccess = (e3) => { setData(tname, e3.target.result);};
+    };
+  }
+  function setData(n, o){
+    
+    data[n] = o;
+    let undone = Object.keys(data).map((n) => null !== data[n] );
+    let isDone = (undone.filter((e)=> e===false).length === 0);
+    if(isDone){
+      exportAsJSON();
+    }
+  }
+  function exportAsJSON(){
+    const j = JSON.stringify([data]);
+    downloadString(j, 'json', 'SailScoreAllData.json');
+  }
+  return this;
+}
+
+function importAllData(){
+  alert('Sorry, not implemented yet!');
+}
+
 /* FRONT END FUNCTIONS */
+
+function downloadString(text, fileType, fileName) {
+  var blob = new Blob([text], { type: fileType });
+  var a = document.createElement('a');
+  a.download = fileName;
+  a.target = '_blank';
+  a.href = URL.createObjectURL(blob);
+  a.innerText = 'Download CSV';
+  a.dataset.downloadurl = [fileType, a.download, a.href].join(':');
+  a.click();
+  setTimeout(function() { URL.revokeObjectURL(a.href); }, 1500 );  
+}
+
+function onclick_btn3(){
+  setTimeout(function() { URL.revokeObjectURL(document.getElementById('btn3').href); document.getElementById('btn3').remove(); }, 1500);  
+}
 
 function renderSelectOptions(target, proto = Object, keys = ['id', 'name'], fn){
   this.target = target;
@@ -393,7 +506,6 @@ function renderSelectOptions(target, proto = Object, keys = ['id', 'name'], fn){
       if(0 === res.length) {
         return [``];
       }else{
-        //  this.keys = Object.keys(new proto(res[0]));
         return res.map(
           (d) => {
             let b = new proto(d);
@@ -469,7 +581,7 @@ function showSailors(e){
         <button type="button" data-role="delete_sailor" data-id="${s.id}"> &#128465;&#65039; </button>
       </span>
     </div>`);});
-  document.querySelectorAll('[data-role="edit_sailor"]').forEach(b => b.addEventListener('click', edit_boatclass));
+  document.querySelectorAll('[data-role="edit_sailor"]').forEach(b => b.addEventListener('click', edit_sailor));
   document.querySelectorAll('[data-role="delete_sailor"]').forEach(b => b.addEventListener('click', delete_sailor));
 }
 

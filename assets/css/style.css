@@ -223,6 +223,21 @@ div[data-list="sailors"] .sailor span.actions {
   padding: 4px 8px;
   min-width: 60px;
 }
+.export-buttons {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: start;
+  column-gap: 10px;
+  row-gap: 10px;
+  width: 100%
+}
+.export-buttons button.btn {
+  padding: 4px 8px;
+  min-width: 60px;
+  flex-basis: 220px;
+  cursor: pointer;
+}
 /* POP CONFIRM */
 
 .confirm .confirm-question {
