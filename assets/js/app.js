@@ -31,7 +31,7 @@ class SailScoreDB {
     return request;
   }
   
-  createClubStore(db){
+  createClubStore(db = this.conn.result){
     const o = db.createObjectStore("Club", { keyPath: "id", autoIncrement: true } ); 
     o.createIndex("id", "id", { unique: true });
     o.createIndex("name", "name", { unique: false });
@@ -43,9 +43,17 @@ class SailScoreDB {
     o.createIndex("name", "name", { unique: false });
   }
   
+  createResultsStore(db){
+    const o = db.createObjectStore("Races", { keyPath: "id", autoIncrement: true } ); 
+    o.createIndex("id", "id", { unique: true });
+    o.createIndex("regatta_id", "regatta_id", { unique: false });
+    o.createIndex("name", "name", { unique: false });
+  }
+  
   createRacesStore(db){
     const o = db.createObjectStore("Races", { keyPath: "id", autoIncrement: true } ); 
     o.createIndex("id", "id", { unique: true });
+    o.createIndex("regatta_id", "regatta_id", { unique: false });
     o.createIndex("name", "name", { unique: false });
   }
   
@@ -68,8 +76,91 @@ class SailScoreDB {
     const o = db.createObjectStore("BoatClasses", { keyPath: "id", autoIncrement: true } ); 
     o.createIndex("id", "id", { unique: true });
     o.createIndex("name", "name", { unique: false });
-    importPortsmouthYardstick(false);
+    if('function' === typeof importPortsmouthYardstick) importPortsmouthYardstick(false);
   }
+  
+  saveIDBObject(osName, obj, fn = null){
+    const r = this.openDB();
+    r.onsuccess = (e)=>{
+      const db = e.target.result;
+      const t = db.transaction([osName], "readwrite");
+      const s = t.objectStore(osName);
+      const q = s.put(obj);
+      if(fn){
+        q.onsuccess = fn;
+      }
+    };
+  }
+  
+  deleteIDBObject(osName, id, fn = null){
+    const r = this.openDB();
+    r.onsuccess = (e)=>{
+      const db = e.target.result;
+      const t = db.transaction([osName], "readwrite");
+      const s = t.objectStore(osName);
+      const q = s.delete(id);
+      if(fn){
+        q.onsuccess = fn;
+      }
+    };
+  }
+  
+  getIDBObject(osName, id, fn = null){
+    const r = this.openDB();
+    r.onsuccess = (e)=>{
+      const db = e.target.result;
+      const t = db.transaction([osName], "readwrite");
+      const s = t.objectStore(osName);
+      const q = s.get(id);
+      if(fn){
+        q.onsuccess = fn;
+      }
+    };
+  }
+  
+  getAllIDBObject(osName, fn = null){
+    const r = this.openDB();
+    r.onsuccess = (e)=>{
+      const db = e.target.result;
+      const t = db.transaction([osName], "readwrite");
+      const s = t.objectStore(osName);
+      const q = s.getAll();
+      if(fn){
+        q.onsuccess = fn;
+      }
+    };
+  }
+
+  clearObjectStore(osName, fn = null ){
+    const db = this.conn.result;
+    const t = db.transaction([osName], "readwrite");
+    const s = t.objectStore(osName);
+    const q = s.clear();
+    if(fn){
+      q.onsuccess = fn;
+    }
+  }
+  clearStoreBoatClasses(fn = null ){
+    let osName = 'BoatClasses';
+    clearObjectStore(osName, fn );
+  }
+  clearStoreClub(fn = null ){
+    let osName = 'Club';
+    clearObjectStore(osName, fn );
+  }
+  clearStoreSailors(fn = null ){
+    let osName = 'Sailors';
+    clearObjectStore(osName, fn );
+  }
+  clearStoreRegattas(fn = null ){
+    let osName = 'Regattas';
+    clearObjectStore(osName, fn );
+  }
+  clearStoreRaces(fn = null ){
+    let osName = 'Races';
+    clearObjectStore(osName, fn );
+  }
+  /* Cached data */
   
   set cached( c ){
     if(0 === Object.keys(this._cached).length){
@@ -79,13 +170,17 @@ class SailScoreDB {
   get cached(){
     const _c = this._cached; 
     return { 
-      sailor: function(s){ return _c.sailor.filter( (x) => 
-              x.fullName.toLowerCase().indexOf(s.toLowerCase()) > -1 ||
-              x.fiv.toString().indexOf(s) > -1 )},
-      boatclass: function(s){ return _c.boatclass.filter( (x) => x.name.toLowerCase().indexOf(s.toLowerCase()) > -1 )},
-      competitor: function(s){ return _c.competitor.filter( (x) => x.fullName.toLowerCase().indexOf(s.toLowerCase()) > -1 )}
-    }
+      sailor: function(s){ 
+        return _c.sailor.filter( (x) => 
+        x.fullName.toLowerCase().indexOf(s.toLowerCase()) > -1 ||
+        x.fiv.toString().indexOf(s) > -1 );},
+      boatclass: function(s){ 
+        return _c.boatclass.filter( (x) => x.name.toLowerCase().indexOf(s.toLowerCase()) > -1 );},
+      competitor: function(s){ 
+        return _c.competitor.filter( (x) => x.fullName.toLowerCase().indexOf(s.toLowerCase()) > -1 );}
+    };
   }
+
   set club( c ){
     this._cached.club = c;
   }
@@ -179,13 +274,13 @@ class Competitor extends entity {
   constructor(c = {regatta_id: 0, helm_id: 0, crew_ids:[], boat_id:null, sailNumber:'', id: null}) {
     super(c);
     //this.defineProperty = {_data: {value: {}, writable: true, enumerable: true, configurable: true}};
-    this['#data'] = {};
     this.regatta_id = c.regatta_id;
     this.helm_id = c.helm_id;
     this.crew_ids = c.crew_ids;
     this.sailNumber = stripHtml(c.sailNumber);
     this.helm = {};
     this.crew = [];
+    this['#data'] = {};
   }
   set _data(o){
     let n = o;
@@ -219,82 +314,93 @@ class BoatClass extends entity{
 
 /* SINGLETONS */
 
+class ClubSingleton{
+  iDBObjectName = 'Club';
+  constructor() {
+    if (!ClubSingleton.instance) {
+      ClubSingleton.instance = this;
+    }
+    return ClubSingleton.instance;
+  }
+  create(o) {
+    const c = new Club(o);
+    this.save(c);
+    return c;
+  }
+  save(c, fn = null ) {
+    sailScoreDB.saveIDBObject(this.iDBObjectName, c, fn);
+    // () => {pop.notify('BoatClass', 'Data succesfully saved');}
+  }
+  get (id, fn) {
+    sailScoreDB.getIDBObject(this.iDBObjectName, id, fn);
+  }
+  delete(id, fn){
+    sailScoreDB.deleteIDBObject(this.iDBObjectName, id, fn);
+  }
+  getAll(fn){
+    const iDBObjectName = this.iDBObjectName;
+    const onsuccess = (e) => {
+      sailScoreDB.club = e.target.result.map((b) => new Club(b));
+      console.log("Club recuperati con successo.");
+      if(fn){
+        fn(e);
+      }
+    };
+    sailScoreDB.getAllIDBObject(iDBObjectName, onsuccess);
+  }
+}
+
+const clubSingleton = new ClubSingleton();
+
+class RegattaSingleton{
+  
+}
+
+const regattaSingleton = new RegattaSingleton();
+
+class CompetitorSingleton{
+  
+}
+
+const competitorSingleton = new CompetitorSingleton();
+
 class BoatClassSingleton {
+  
   constructor() {
     if (!BoatClassSingleton.instance) {
+      this._iDBObjectName = 'BoatClasses';
       BoatClassSingleton.instance = this;
     }
     return BoatClassSingleton.instance;
   }
-
-  createBoatClass(b) {
+  iDBObjectName(){
+    return BoatClassSingleton.instance._iDBObjectName;
+  }
+  
+  create(b) {
     const bc = new BoatClass(b);
-    this.saveBoatClass(bc);
+    this.save(bc);
     return bc;
   }
 
-  saveBoatClass(boatClass) {
-    const request = sailScoreDB.openDB();
-    
-    request.onerror = function(event) {
-      console.log("Errore nell'apertura del database: " + event.target.errorCode);
-    };
-    request.onsuccess = function(event) {
-      const db = event.target.result;
-      const transaction = db.transaction(["BoatClasses"], "readwrite");
-      const store = transaction.objectStore("BoatClasses");
-      store.put(boatClass);
-      console.log("boatClass salvata con successo nel database.");
-    };
+  save(boatClass, fn = null ) {
+    sailScoreDB.saveIDBObject('BoatClasses', boatClass, fn);
   }
   get (id, fn) {
-    const request = sailScoreDB.openDB();
-      request.onsuccess = function(event) {
-      const db = event.target.result;
-      const transaction = db.transaction(["BoatClasses"], "readonly");
-      const store = transaction.objectStore("BoatClasses");
-      const res = store.get(id);
-      
-      if (fn){
-        res.onsuccess = fn;
-      }
-      console.log("BoatClass recuperato con successo.");
-    }; 
+    sailScoreDB.getIDBObject('BoatClasses', id, fn);
   }
-  deleteBoatClass(id, fn){
-    const request = sailScoreDB.openDB();
-      request.onsuccess = function(event) {
-      const db = event.target.result;
-      const transaction = db.transaction(["BoatClasses"], "readwrite");
-      const store = transaction.objectStore("BoatClasses");
-      const res = store.delete(id);
-      
-      if (fn){
-        res.onsuccess = fn;
-      }
-      console.log("BoatClass eliminato con successo.");
-    };
-    
+  delete(id, fn){
+    sailScoreDB.deleteIDBObject('BoatClasses', id, fn);
   }
   getAll(fn){
-    const request = sailScoreDB.openDB();
-
-    request.onerror = function(event) {
-      console.log("Errore nell'apertura del database: " + event.target.errorCode);
+    const onsuccess = (e) => {
+      sailScoreDB.boatclass = e.target.result.map((b) => new BoatClass(b));
+      console.log("BoatClass recuperati con successo.");
+      if(fn){
+        fn(e);
+      }
     };
-    request.onsuccess = function(event) {
-      const db = event.target.result;
-      const transaction = db.transaction(["BoatClasses"], "readonly");
-      const store = transaction.objectStore("BoatClasses");
-      const res = store.getAll();
-      res.onsuccess = (e) => { 
-        sailScoreDB.boatclass = e.target.result.map((b) => new BoatClass(b));
-        if(fn){
-          fn(e);
-        }
-        console.log("BoatClass recuperati con successo.");
-      };
-    };
+    sailScoreDB.getAllIDBObject('BoatClasses', onsuccess);
   }
 }
 
@@ -303,18 +409,22 @@ const boatClassSingleton = new BoatClassSingleton();
 class SailorSingleton {
   constructor() {
     if (!SailorSingleton.instance) {
+      this._iDBObjectName = 'Sailors';
       SailorSingleton.instance = this;
     }
     return SailorSingleton.instance;
   }
-
-  createSailor(sailor) {
+  iDBObjectName(){
+    return BoatClassSingleton.instance._iDBObjectName;
+  }
+  
+  create(sailor) {
     const s = new Sailor(sailor);
-    this.saveSailor(s);
+    this.save(s);
     return s;
   }
 
-  saveSailor(sailor) {
+  save(sailor) {
     const request = sailScoreDB.openDB();
 
     request.onerror = function(event) {
@@ -417,7 +527,7 @@ function importPortsmouthYardstick(confirm = false){
     if(xhr.readyState === 4 && xhr.status === 200){
       const data = JSON.parse( xhr.responseText );
       if(data.length){
-        data.forEach( b => boatClassSingleton.createBoatClass(b) );
+        data.forEach( b => boatClassSingleton.create(b) );
         if(confirm){
           showBoatClasses();
           pop.notify('Import Portsmouth Yardstick', 'data imported successfully');
@@ -465,7 +575,7 @@ function exportAllData() {
     
     data[n] = o;
     let undone = Object.keys(data).map((n) => null !== data[n] );
-    let isDone = (undone.filter((e)=> e===false).length === 0);
+    let isDone = (undone.filter((e )=> e === false).length === 0);
     if(isDone){
       exportAsJSON();
     }
@@ -574,6 +684,14 @@ function renderTable(target, proto = Object, fn){
 /* SAILORS */
 
 function showSailors(e){
+  /*
+  let tag_sailors = document.querySelector('[data-list="sailors"]');
+  renderTable(tag_sailors, Sailor, (e) => {
+    document.querySelectorAll('[data-role="edit_sailor"]').forEach(b => b.addEventListener('click', edit_sailor));
+    document.querySelectorAll('[data-role="delete_sailor"]').forEach(b => b.addEventListener('click', delete_sailor));
+  });
+  */
+  
   let tag_sailors = document.querySelector('[data-list="sailors"]');
   let sailors = e.currentTarget.result;
   tag_sailors.innerHTML = '';
@@ -588,6 +706,7 @@ function showSailors(e){
     </div>`);});
   document.querySelectorAll('[data-role="edit_sailor"]').forEach(b => b.addEventListener('click', edit_sailor));
   document.querySelectorAll('[data-role="delete_sailor"]').forEach(b => b.addEventListener('click', delete_sailor));
+  
 }
 
 
@@ -654,7 +773,7 @@ function save_sailor(e){
   const ff = [...fields].map(f => ({name: f.name, value: f.value}));
   const sailor = new Sailor();
   sailor._setFromArray = ff;
-  sailorSingleton.saveSailor(sailor);
+  sailorSingleton.save(sailor);
   sailorSingleton.getAll(showSailors);
   removeFromPopup();
 }
@@ -711,7 +830,7 @@ function delete_boatclass(e){
   const item_id = Number(e.currentTarget.getAttribute('data-id'));  
   pop.confirm('Delete Boat Class', 'Really want delete the record?',
     function(){
-      boatClassSingleton.deleteBoatClass(item_id, function(){
+      boatClassSingleton.delete(item_id, function(){
           boatClassSingleton.getAll(showBoatClasses);
         });
     });
@@ -722,7 +841,7 @@ function save_boatclass(e){
   const ff = [...fields].map(f => ({name: f.name, value: f.value}));
   const boatClass = new BoatClass();
   boatClass._setFromArray = ff;
-  boatClassSingleton.saveBoatClass(boatClass);
+  boatClassSingleton.save(boatClass);
   boatClassSingleton.getAll(showBoatClasses);
   removeFromPopup();
 }
@@ -756,6 +875,14 @@ var pop = {
       pop.fn_no = fn_no;
     }
     addToPopup(pop.title, html);
+  },
+  alert: function(tit='', msg=''){
+    let html = `<div class="confirm"><div class="confirm-question">${msg}</div></div><div class="popup-buttons center">
+        <button type="button" onclick="pop.response(true)"> ok </button>
+      </div>`;
+    pop.fn_yes = removeFromPopup;
+    addToPopup(pop.title, html);
+   
   },
   notify: function(tit='', msg='', time=1500){
     let html = `<div class="confirm"><div class="confirm-question">${msg}</div></div>`;
