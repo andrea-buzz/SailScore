@@ -118,7 +118,7 @@ div[data-list="competitors"] .competitor.pulled-top {
   transition:  .5s order linear .1s, .2s filter ease 0s;
   background-color: #efefef;
   filter:invert(100%);
-  box-shadow: 0 0 1px 1px #0969da;
+  box-shadow: 0 0 1px 1px #777;
 }
 div[data-list="competitors"] .competitor[data-status="started"] {
   order: 1000;
@@ -225,12 +225,13 @@ div[data-list="sailors"] .sailor span.actions {
 }
 .export-buttons {
   display: flex;
+  width: 100%;
   flex-direction: row;
   flex-wrap: wrap;
-  justify-content: start;
+  justify-content: flex-start;
   column-gap: 10px;
   row-gap: 10px;
-  width: 100%
+  
 }
 .export-buttons button.btn {
   padding: 4px 8px;

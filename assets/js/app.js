@@ -68,7 +68,7 @@ class SailScoreDB {
     const o = db.createObjectStore("BoatClasses", { keyPath: "id", autoIncrement: true } ); 
     o.createIndex("id", "id", { unique: true });
     o.createIndex("name", "name", { unique: false });
-    importPotsmouthYardstick();
+    importPortsmouthYardstick(false);
   }
   
   set cached( c ){
@@ -147,13 +147,14 @@ class Club extends entity {
 
 class Sailor extends entity {
   
-  constructor(s = {firstname:'',lastname:'',fiv:null}) {
+  constructor(s = {firstname:'', lastname:'', fiv:'', club:''}) {
     super(s);
     this.firstname = s.firstname ? stripHtml(s.firstname):'';
     this.lastname = s.lastname?stripHtml(s.lastname):'';
     this.fiv = 0;
-    this.fivNumber = s.fiv?s.fiv:0;
+    this.fivNumber = s.fiv?s.fiv:'';
     this.birthDate = s.birthdate?s.birthdate:0;
+    this.club = s.club?stripHtml(s.club):'';
   };
   
   get fullName(){
@@ -408,15 +409,19 @@ function stripHtml(str){
 
 /* IMPORT EXPORT FUNCTIONS */
 
-function importPotsmouthYardstick(){
+function importPortsmouthYardstick(confirm = false){
   const url = 'https://andrea-buzz.github.io/SailScore/data/py-list.json';
   var xhr = new XMLHttpRequest();
-  xhr.onerror = function(){ alert('Import Failed! Error: ' + xhr.status); };
+  xhr.onerror = function(){ pop.notify('Error', 'Import Failed! Error: ' + xhr.status); };
   xhr.onreadystatechange = function( e ) {
     if(xhr.readyState === 4 && xhr.status === 200){
       const data = JSON.parse( xhr.responseText );
       if(data.length){
-        data.forEach( b => boatClassSingleton.createBoatClass(b) ); 
+        data.forEach( b => boatClassSingleton.createBoatClass(b) );
+        if(confirm){
+          showBoatClasses();
+          pop.notify('Import Portsmouth Yardstick', 'data imported successfully');
+        }
       }
     }
     if (xhr.readyState !== 4) {
@@ -473,7 +478,7 @@ function exportAllData() {
 }
 
 function importAllData(){
-  alert('Sorry, not implemented yet!');
+  pop.notify('Import all data', 'Sorry, not implemented yet!');
 }
 
 /* FRONT END FUNCTIONS */
@@ -751,7 +756,12 @@ var pop = {
       pop.fn_no = fn_no;
     }
     addToPopup(pop.title, html);
-  }  
+  },
+  notify: function(tit='', msg='', time=1500){
+    let html = `<div class="confirm"><div class="confirm-question">${msg}</div></div>`;
+    addToPopup(pop.title, html);
+    setTimeout(removeFromPopup, time);
+  }
 };
 
 function addToPopup(title, html){
