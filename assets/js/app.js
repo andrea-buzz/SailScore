@@ -842,7 +842,9 @@ function save_sailor(e){
 
 function showBoatClasses(){
   const onsuccess = (e) => {
-    renderTable(document.querySelector('[data-list="boatclass"]'), BoatClass, e.target.result, true, null );
+    const fields = [{label:'id', field:'id'}, {label:'Boat Class', field:'name'}, 
+                  {label:'Rating', field:'rating'}];
+    renderTable(document.querySelector('[data-list="boatclass"]'), BoatClass, e.target.result, true, fields );
   };
   boatClassSingleton.getAll( onsuccess );
 }
