@@ -38,16 +38,17 @@ a {
 /* DATA TABLE */
 
 .data-table {
-  min-width: fit-content;
+  /*min-width: fit-content;*/
   border-top: 1px solid #ccc;
   border-left: 1px solid #ccc;
   margin-bottom: 1rem;
+  max-width: 98vw;
 }
 .data-table > .tr {
   display: flex;
   column-gap: 0;
   justify-content: space-between;
-  
+  width: 100%;
 }
 .data-table > .tr:nth-child( odd ) {
   background-color: #efefef;
@@ -97,6 +98,17 @@ a {
   white-space: nowrap;
   text-overflow: ellipsis;
   */
+}
+.data-table.tbl-sailor > .tr > .fullname {
+  flex-basis: 25%;
+  flex-grow: 1;
+}
+.data-table.tbl-sailor > .tr > .birthdate {
+  display: none;
+  flex-basis: 80px;
+}
+.data-table.tbl-sailor > .tr > .fiv {
+  flex-basis: 80px;
 }
 /* COMPETITORS */
 
@@ -400,6 +412,9 @@ div[data-list="sailors"] .sailor span.actions {
     font-weight: bold;
   }
   div[data-list="sailors"] .sailor span.birthdate {
+    display: block;
+  }
+  .data-table.tbl-sailor > .tr > .birthdate {
     display: block;
   }
 }
