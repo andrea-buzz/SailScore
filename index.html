@@ -2,40 +2,121 @@
 <html>
     <head>
         <title>Sail Score</title>
+        <link rel="manifest" href="./app.webmanifest"/>
         <meta name="description" content="Sail Score">
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <link href="assets/css/style.css" rel="stylesheet" type="text/css"/>
+        <link rel="icon" href="./android-icon-48x48.png"/>
+        <link rel="apple-touch-icon" href="./android-icon-48x48.png"/>
     </head>
     <body>
+        
         <header class="page-header">
+          <div class="wrap-menu-top">
+            <div class="container">
+              <nav id="global-nav" class="" aria-label="Global">
+                <ul>
+                  <li><a>Club</a></li>
+                  <li><a>Sailors</a></li>
+                  <li><a>Regattas</a></li>
+                  <li><a>Races</a></li>
+                  <li><a>Competitors</a></li>
+                  <li><a>Boat Classes</a></li>
+                </ul>
+                <span class="toggle-menu"></span>
+              </nav>
+              
+            </div>
+          </div>
           <div class="container">
             <h1>Sail Score</h1>
           </div>       
         </header>
-        <main data-block="events">
+        <main data-block="club">
           <div class="container">
             <article>
               <header>
-                  <h2>Events</h2>
+                  <h2>Club</h2>
+                  <div class="field-group">
+                    <button type="button" data-role="add_club"> &#10133; </button>
+                  </div>
               </header>
-                <div class="content" data-list="events"></div>
+                <div class="content" data-list="Club"></div>
             </article>
           </div>
         </main>
+      
+        <section data-block="regattas">
+            <div class="container">
+                <article>
+                  <header>
+                      <h2>Regattas</h2>
+                      <div class="field-group">
+                        <button type="button" data-role="add_regatta"> &#10133; </button>
+                      </div>
+                  </header>
+                    <div class="content" data-list="regattas"></div>
+                </article>
+              </div>
+        </section>
+      
         <section data-block="competitors">
             <div class="container">
                 <article>
                   <header>
                       <h2>Competitors</h2>
+                      <div class="field-group">
+                        <button type="button" data-role="add_competitor"> &#10133; </button>
+                      </div>
                   </header>
                     <div class="content" data-list="competitors"></div>
                 </article>
               </div>
         </section>
+        <section data-block="sailors">
+            <div class="container">
+                <article>
+                  <header>
+                      <h2>Sailors</h2>
+                      <div class="field-group">
+                        <button type="button" data-role="add_sailor"> &#10133; </button> 
+                        <div class="form-control"><select name="sailor"><option value=""> ... </option></select></div>
+                      </div>
+                  </header>
+                    <div class="content" data-list="sailors"></div>
+                </article>
+              </div>
+        </section>
+        <section data-block="boatclass">
+            <div class="container">
+                <article>
+                  <header>
+                      <h2>Boat Classes</h2>
+                      <div class="field-group">
+                        <button type="button" data-role="add_boatclass"> &#10133; </button>
+                      </div>
+                  </header>
+                    <div class="content" data-list="boatclass"></div>
+                </article>
+              </div>
+        </section>
+        <section data-block="import-export">
+          <div class="container">
+             <h2>Import export data</h2>
+              <div class="field-group">
+                <div class="export-buttons">
+                  <button type="button" class="btn" onclick="exportAllData()"> Export all data </button>
+                  <button type="button" class="btn" onclick="importAllData()"> Import all data </button>
+                  <button type="button" class="btn" onclick="importPortsmouthYardstick(true)"> Import Portsmouth Yardstick </button>
+                </div>
+              </div>
+          </div>
+        </section>
+        <section class="popup-fixed hidden"><div class="popup-wrapper"><div class="popup-header"><div class="popup-title"></div><a class="btn-close" onclick="removeFromPopup()"></a></div><div class="popup-content"></div></div></section>
         <footer class="page-footer">
-            <div class="container"></div>
+          <div class="container"></div>
         </footer>
-        <script src="assets/js/app.js"></script>
+        <script src="assets/js/app.js" defer></script>
     </body>
 </html>

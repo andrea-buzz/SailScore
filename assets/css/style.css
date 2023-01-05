@@ -2,9 +2,14 @@ body, html {
   padding: 0;
   margin: 0;
   font-size: 1rem;
-  font-family: roboto, verdana, arial, sans-serif;
+  font-family: arial, roboto, verdana, sans-serif;
   background-color: #fff;
   color: #24292f;
+}
+body {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 a {
   color:#0969da;
@@ -13,35 +18,417 @@ a {
   position: relative;
   margin: 0 15px;
 }
+.content {
+  display: initial;
+}
+.wrap-menu-top {
+  background-color: #333;
+  color: #fff;
+  position: relative;
+}
 .page-header {
-  padding:20px;
+  padding: 0;
   background-color: #f6f8fa;
 }
 .page-footer {
   padding:20px;
   background-color: #24292f;
 }
+
+/* DATA TABLE */
+
+.data-table {
+  /*min-width: fit-content;*/
+  border-top: 1px solid #ccc;
+  border-left: 1px solid #ccc;
+  margin-bottom: 1rem;
+  max-width: 98vw;
+}
+.data-table > .tr {
+  display: flex;
+  column-gap: 0;
+  justify-content: space-between;
+  width: 100%;
+}
+.data-table > .tr:nth-child( odd ) {
+  background-color: #efefef;
+}
+.data-table > .tr:nth-child( even ) {
+  background-color: #fff;
+}
+.data-table > .tr.thead {
+  background-color: #333;
+  color: #fff;
+}
+.data-table > .tr > .th {
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid #ccc;
+  border-right: 1px solid #ccc;
+  padding: 8px 4px;
+  font-weight: bold;
+  text-align: left;
+}
+.data-table > .tr > .td {
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid #ccc;
+  border-right: 1px solid #ccc;
+  padding: 4px;
+  text-align: left;
+}
+.data-table > .tr > .actions {
+    display: flex;
+    justify-content: flex-end;
+    flex-basis: 94px;
+    text-align: right;
+    white-space: nowrap;
+}
+.data-table > .tr > .id {
+  flex-basis: 50px;
+}
+.data-table > .tr > .rating {
+  flex-basis: 60px;
+}
+.data-table > .tr > .name {
+  flex-basis: 40%;
+  flex-grow: 1;
+  /*
+  overflow-x: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  */
+}
+.data-table.tbl-sailor > .tr > .fullname {
+  flex-basis: 25%;
+  flex-grow: 1;
+}
+.data-table.tbl-sailor > .tr > .birthdate {
+  display: none;
+  flex-basis: 80px;
+}
+.data-table.tbl-sailor > .tr > .fiv {
+  flex-basis: 80px;
+}
+/* COMPETITORS */
+
 div[data-list="competitors"] {
+  flex-grow: 1;
   display: flex;
   flex-direction: column;
 }
-.competitor {
-  margin-bottom: 10px;
+div[data-list="competitors"] .competitor {
+  padding:8px 2px;
   display: flex;
   justify-content: space-between;
+  /*background-color: #fff;*/
+  filter: invert(0%);
+  transition: .5s order linear .1s, 1.5s filter ease 1s, 1.5s background-color ease 1s;
+  background-color: transparent;
 }
-.competitor[data-status="started"] {
+div[data-list="competitors"] .competitor.pulled-top {
+  transition:  .5s order linear .1s, .2s filter ease 0s;
+  background-color: #efefef;
+  filter:invert(100%);
+  box-shadow: 0 0 1px 1px #777;
+}
+div[data-list="competitors"] .competitor[data-status="started"] {
   order: 1000;
 }
-.competitor span {
-  flex-basis: 20%;
+
+div[data-list="competitors"] .competitor span {
+  flex-basis: 12%;
 }
-.competitor button {
-  width: 36px;
+div[data-list="competitors"] .competitor span.crew{
+  flex-basis: 40%;
 }
+button[data-role] {
+  min-width: 32px;
+  min-height: 32px;
+}
+button[data-role] + button[data-role] {
+  margin-left: 10px;
+}
+div[data-list="competitors"] .competitor button[data-role="pull-top"], 
+div[data-list="competitors"] .competitor button[data-role="set-arrived"], 
+button[data-role="edit_sailor"] {
+  min-width: 32px;
+  min-height: 32px;
+  width: 32px;
+  height: 32px;
+  font-size: 18px;
+  text-align: center; 
+  padding:0;
+  line-height: 1;
+}
+button[data-role="add_sailor"]{
+  text-align: center;
+  padding: 0;
+  line-height: 1;
+}
+.btn-close {
+  width: 32px;
+  height: 32px;
+  color: transparent;
+  background: transparent url('../img/cancel.svg') no-repeat center center;
+  background-size: 24px 24px;
+}
+
+div[data-list="sailors"] .sailor {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 15px;
+  column-gap: 10px;
+  
+}
+
+div[data-list="sailors"] .sailor span.birthdate {
+  display: none;
+}
+/*
+div[data-list="sailors"] .sailor span.fiv {
+  flex-basis: 25%;
+}
+div[data-list="sailors"] .sailor span {
+  flex-basis: 15%;
+}
+*/
+div[data-list="sailors"] .sailor span.fullname {
+  flex-basis: 44%;
+  overflow-x: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+div[data-list="sailors"] .sailor span.actions {
+  flex-basis: 94px;
+  text-align: right;
+  white-space: nowrap
+}
+.field-group {
+  margin-bottom: 15px;
+  display: flex;
+  justify-content: flex-start;
+  column-gap: 10px;
+}
+.field-group label {
+  flex-basis: 30%;
+}
+.field-group .form-control {
+  flex-basis: 70%;
+  max-width: 220px;
+}
+.field-group input, .field-group select {
+  font-size: 1.1rem;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.field-group input[type="date"] {
+  width: 100%; 
+}
+.form-buttons {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+}
+.form-buttons button {
+  padding: 4px 8px;
+  min-width: 60px;
+}
+.export-buttons {
+  display: flex;
+  width: 100%;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  column-gap: 10px;
+  row-gap: 10px;
+  
+}
+.export-buttons button.btn {
+  padding: 4px 8px;
+  min-width: 60px;
+  flex-basis: 220px;
+  cursor: pointer;
+}
+/* POP CONFIRM */
+
+.confirm .confirm-question {
+  font-size: 18px;
+  margin-bottom: 1rem;
+}
+
+/* POPUP */
+.popup-fixed {
+  position: fixed;
+  z-index: 3;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background-color: rgba(0, 0, 0, .2);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 30px;
+}
+.popup-fixed .popup-content {
+  background-color: #fff;
+  padding: 15px;
+  max-width: 100vw;
+}
+.popup-fixed .popup-wrapper {
+  display: block;
+}
+.popup-fixed .popup-header {
+  display: flex;
+  padding-left: 15px;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #333;
+}
+.popup-fixed .popup-header .popup-title {
+  color: #fff;
+  font-size: 18px;
+}
+.popup-fixed .popup-content .popup-buttons {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+}
+.popup-fixed .popup-content .popup-buttons button {
+  padding: 4px 8px;
+  min-width: 60px;
+}
+.popup-fixed .popup-header > .btn-close{
+  position: relative;
+  display: block;
+  padding: 5px;
+  margin-right: 5px;
+  color: #fff;
+  cursor: pointer;
+}
+
+.popup-fixed.hidden {
+  display: none;
+  z-index: -1;
+}
+#global-nav {
+  padding: .6rem 0;
+  min-height: 32px;
+}
+#global-nav .toggle-menu {
+  width: 30px;
+  height: 30px;
+  float: right;
+  display: block;
+  color: #fff;
+  cursor: pointer;
+  position: absolute;
+  top: 10px;
+  right: 0;
+  background: transparent url('../img/menu.svg') center center no-repeat;
+  background-size: 24px 24px;
+  border: solid 1px transparent;
+  border-radius: 3px; 
+}
+
+#global-nav .toggle-menu:active {
+  outline: 1px solid rgba(9, 105, 218, .2);
+}
+#global-nav .toggle-menu.opened {
+  background: transparent url('../img/cancel.svg') no-repeat center center;
+  background-size: 24px 24px;
+}
+#global-nav > ul {
+  padding: 0;
+  margin: 0;
+  display: none;
+  transition: .5s transform ease .75s;
+  transform: translateX( -100% );
+  
+}
+#global-nav > ul[aria-expanded=""]{
+  
+  transform: translateX( -100% );
+}
+#global-nav > ul[aria-expanded="true"]{
+  display: block;
+  position: absolute;
+  z-index: 2;
+  top: 50px;
+  left: 0;
+  right: 0;
+  background-color: #4d4d4d;
+  padding: 15px;
+  margin: 0 -15px;
+  transition: .5s transform ease .75s;
+  transform: translateX( 0% );
+}
+#global-nav > ul li {
+  display: block;
+  margin-bottom: .6rem
+}
+#global-nav > ul li a {
+  color: #fff;
+  font-size: 18px;
+  cursor: pointer;
+  width: 100%;
+  display: block;
+  margin-bottom: .6rem
+}
+
+@media screen and (min-width:768px) {
+  #global-nav .toggle-menu {
+    display: none;
+  }
+  #global-nav > ul[aria-expanded=""]{
+    display: flex;
+    transform: translateX(0);
+  }
+  #global-nav > ul {
+    display: flex;
+    flex-direction: row;
+    column-gap: .5rem;
+    justify-content: space-between;
+    transform: translateX(0);
+  }
+  #global-nav > ul li {
+    display: flex;
+    flex-basis: 16%;
+  }
+  #global-nav > ul li a {
+    font-size: 16px;
+    padding: 4px 8px;
+    border: 1px solid rgba(255, 255, 255, .5);
+    margin-bottom: 0;
+    transition: .3s background-color ease;
+    text-align: center;
+  }
+  #global-nav > ul li a:hover{
+    background-color: #fff;
+    color:#333;
+    font-weight: bold;
+  }
+  div[data-list="sailors"] .sailor span.birthdate {
+    display: block;
+  }
+  .data-table.tbl-sailor > .tr > .birthdate {
+    display: block;
+  }
+}
+
 @media screen and (min-width: 1200px){
   .container {
     margin: 0 auto;
     max-width: 1200px;
+  }
+  #global-nav > ul li {
+    flex-basis: 13%;
+  }
+  .popup-fixed {
+    padding-left: calc(50vw - 600px);
+    padding-right: calc(50vw - 600px);
   }
 }
