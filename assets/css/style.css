@@ -110,6 +110,18 @@ a {
 .data-table.tbl-sailor > .tr > .fiv {
   flex-basis: 80px;
 }
+
+.data-table.tbl-club > .tr > .name {
+  flex-basis: 25%;
+  flex-grow:1;
+}
+.data-table.tbl-club > .tr > .address {
+  flex-basis: 20%;
+}
+.data-table.tbl-club > .tr > .location {
+  flex-basis: 20%;
+}
+
 /* COMPETITORS */
 
 div[data-list="competitors"] {
