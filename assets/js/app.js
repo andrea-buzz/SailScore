@@ -252,7 +252,7 @@ class entity {
   };
 }
 class Club extends entity {
-  constructor(c = {name:'', location:'', id: null}) {
+  constructor(c = {name:'', address:'', location:'', id: null}) {
     super(c);
     let PD = {value: null, writable: true, enumerable: true, configurable: false};
     PD.value = stripHtml(c.name);
@@ -859,7 +859,7 @@ function add_boatclass(e) {
         <label>Name</label> <div class="form-control"><input type="text" name="name" /></div>
       </div>
       <div class="field-group">
-        <label>Rating</label> <div class="form-control"><input type="text" name="rating" /></div>
+        <label>Rating</label> <div class="form-control"><input type="number" name="rating" /></div>
       </div>
       <div class="form-buttons">
         <input type="hidden" name="id" />
@@ -874,12 +874,12 @@ function edit_boatclass(e) {
   boatClassSingleton.get(Number(e.currentTarget.getAttribute('data-id')), function(ev){
     const title = 'Edit Boat Class';
     let s = ev.currentTarget.result;
-    const form = `<form data-role="form-sailor">
+    const form = `<form data-role="form-boatclass">
       <div class="field-group">
         <label>Name</label> <div class="form-control"><input type="text" name="name" value="${s.name}" /></div>
       </div>
       <div class="field-group">
-        <label>Rating</label> <div class="form-control"><input type="text" name="rating" value="${s.rating}" /></div>
+        <label>Rating</label> <div class="form-control"><input type="number" name="rating" value="${s.rating}" /></div>
       </div>
       <div class="form-buttons">
         <input type="hidden" name="id" value="${s.id}" />
@@ -910,6 +910,88 @@ function save_boatclass(e){
   boatClassSingleton.getAll(showBoatClasses);
   removeFromPopup();
 }
+
+/* Club */
+
+function showClub(){
+  const onsuccess = (e) => {
+    const fields = [{label:'id', field:'id'}, {label:'Name', field:'name'}, 
+                  {label:'Address', field:'address'}, {label:'Location', field:'location'}];
+    renderTable(document.querySelector('[data-list="Club"]'), Club, e.target.result, true, fields );
+  };
+  clubSingleton.getAll( onsuccess );
+}
+
+showClub();
+document.querySelector('[data-role="add_club"]').addEventListener('click', add_club);
+
+function add_club(e) {
+  const title = 'Add Club';
+  const form = `<form data-role="form-club">
+      <div class="field-group">
+        <label>Name</label> <div class="form-control"><input type="text" name="name" /></div>
+      </div>
+      <div class="field-group">
+        <label>Address</label> <div class="form-control"><input type="text" name="address" /></div>
+      </div>
+      <div class="field-group">
+        <label>Location</label> <div class="form-control"><input type="text" name="location" /></div>
+      </div>
+      <div class="form-buttons">
+        <input type="hidden" name="id" />
+        <button type="reset">Reset</button> <button type="button" data-role="save_club">Save</button>
+      </div>
+    </form>`;
+  addToPopup(title, form);
+  document.querySelector('[data-role="save_club"]').addEventListener('click', save_club);
+}
+
+function edit_club(e) {
+  clubSingleton.get(Number(e.currentTarget.getAttribute('data-id')), function(ev){
+    const title = 'Edit Club';
+    let s = ev.currentTarget.result;
+    const form = `<form data-role="form-club">
+      <div class="field-group">
+        <label>Name</label> <div class="form-control"><input type="text" name="name" value="${s.name}" /></div>
+      </div>
+      <div class="field-group">
+        <label>Address</label> <div class="form-control"><input type="text" name="address" value="${s.address}" /></div>
+      </div>
+      <div class="field-group">
+        <label>Location</label> <div class="form-control"><input type="text" name="location" value="${s.location}" /></div>
+      </div>
+      <div class="form-buttons">
+        <input type="hidden" name="id" value="${s.id}" />
+        <button type="reset">Reset</button> <button type="button" data-role="save_club">Save</button>
+      </div>
+    </form>`;
+    addToPopup(title, form);
+    document.querySelector('[data-role="save_club"]').addEventListener('click', save_club);
+  });
+}
+
+function delete_club(e){
+  const item_id = Number(e.currentTarget.getAttribute('data-id'));  
+  pop.confirm('Delete Club', 'Really want delete the record?',
+    function(){
+      clubSingleton.delete(item_id, function(){
+          clubSingleton.getAll(showClub);
+        });
+    });
+};
+
+function save_club(e){
+  const fields = e.currentTarget.parentElement.parentElement.querySelectorAll('input[name]');
+  const ff = [...fields].map(f => ({name: f.name, value: f.value}));
+  const club = new Club();
+  club._setFromArray = ff;
+  clubSingleton.save(club);
+  clubSingleton.getAll(showClub);
+  removeFromPopup();
+}
+
+
+/* POP */
 
 var pop = {
   response : function(res){
