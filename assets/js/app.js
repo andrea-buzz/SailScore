@@ -201,7 +201,9 @@ class SailScoreDB {
       boatclass: function(s){ 
         return _c.boatclass.filter( (x) => x.name.toLowerCase().indexOf(s.toLowerCase()) > -1 );},
       competitor: function(s){ 
-        return _c.competitor.filter( (x) => x.fullName.toLowerCase().indexOf(s.toLowerCase()) > -1 );}
+        return _c.competitor.filter( (x) => x.fullName.toLowerCase().indexOf(s.toLowerCase()) > -1 );},
+      club: function(s){ 
+        return _c.club.filter( (x) => x.name.toLowerCase().indexOf(s.toLowerCase()) > -1 );}
     };
   }
 
@@ -252,7 +254,7 @@ class entity {
   };
 }
 class Club extends entity {
-  constructor(c = {name:'', location:'', id: null}) {
+  constructor(c = {name:'', address:'', location:'', id: null}) {
     super(c);
     let PD = {value: null, writable: true, enumerable: true, configurable: false};
     PD.value = stripHtml(c.name);
@@ -336,6 +338,38 @@ class BoatClass extends entity{
   }
 }
 
+class Regatta extends entity{
+  constructor(b = {name:'', startdate: new Date(), enddate: new Date(), club: {}, id: null}) {
+    super(b);
+    this.name = stripHtml(b.name);
+    this.startDate = b.startdate;
+    this.endDate = b.enddate;
+    this.club = b.club;
+  }
+  get startDate(){
+    return ( 0 === this.startdate)?'':new Date( this.startdate ).toLocaleDateString();
+  }
+  set startDate(d){
+    this.startdate = (typeof d === 'number')? new Date(d): Date.parse(d);
+  }
+  get endDate(){
+    return ( 0 === this.enddate)?'':new Date( this.enddate ).toLocaleDateString();
+  }
+  set endDate(d){
+    this.enddate = (typeof d === 'number')? new Date(d): Date.parse(d);
+  }
+  set club(c) {
+    this._club = ('string' === typeof c)?JSON.parse(c):Object.assign({},c);
+  }
+  get club() {
+    return this._club;
+  }
+  get clubName() {
+    return ('string' === typeof this._club)?this._club:(new Club(this._club)).name;
+  }
+}
+
+
 /* SINGLETONS */
 
 class ClubSingleton{
@@ -380,7 +414,40 @@ class ClubSingleton{
 const clubSingleton = new ClubSingleton();
 
 class RegattaSingleton{
-  
+   constructor() {
+    if (!RegattaSingleton.instance) {
+      RegattaSingleton.instance = this;
+    }
+    return RegattaSingleton.instance;
+  }
+  osName(){
+    return sailScoreDB.entities.Regatta;
+  }
+  create(o) {
+    const c = new Regatta(o);
+    this.save(c);
+    return c;
+  }
+  save(c, fn = null ) {
+    sailScoreDB.saveIDBObject(this.osName(), c, fn);
+  }
+  get (id, fn = null) {
+    sailScoreDB.getIDBObject(this.osName(), id, fn);
+  }
+  delete(id, fn = null){
+    sailScoreDB.deleteIDBObject(this.osName(), id, fn);
+  }
+  getAll( fn = null ){
+    const iDBObjectName = this.osName();
+    const onsuccess = (e) => {
+      sailScoreDB.regatta = e.target.result.map((b) => new Regatta(b));
+      console.log("Regatta recuperati con successo.");
+      if(fn){
+        fn(e);
+      }
+    };
+    sailScoreDB.getAllIDBObject(this.osName(), onsuccess);
+  }
 }
 
 const regattaSingleton = new RegattaSingleton();
@@ -448,70 +515,27 @@ class SailorSingleton {
     this.save(c);
     return c;
   }
-
-  save(sailor) {
-    const request = sailScoreDB.openDB();
-
-    request.onerror = function(event) {
-      console.log("Errore nell'apertura del database: " + event.target.errorCode);
-    };
-    request.onsuccess = function(event) {
-      const db = event.target.result;
-      const transaction = db.transaction(["Sailors"], "readwrite");
-      const store = transaction.objectStore("Sailors");
-      store.put(sailor);
-      console.log("Sailor salvato con successo nel database.");
-    };
+  save(c, fn = null ) {
+    sailScoreDB.saveIDBObject(this.osName(), c, fn);
   }
-  get(id, fn){
-    const request = sailScoreDB.openDB();
-      request.onsuccess = function(event) {
-      const db = event.target.result;
-      const transaction = db.transaction(["Sailors"], "readonly");
-      const store = transaction.objectStore("Sailors");
-      const res = store.get(id);
-      
-      if (fn){
-        res.onsuccess = fn;
-      }
-      console.log("Sailor recuperato con successo.");
-    };
-  };
-  delete(id, fn){
-    const request = sailScoreDB.openDB();
-      request.onsuccess = function(event) {
-      const db = event.target.result;
-      const transaction = db.transaction(["Sailors"], "readwrite");
-      const store = transaction.objectStore("Sailors");
-      const res = store.delete(id);
-      
-      if (fn){
-        res.onsuccess = fn;
-      }
-      console.log("Sailor eliminato con successo.");
-    };
-    
+  get (id, fn = null) {
+    sailScoreDB.getIDBObject(this.osName(), id, fn);
+    console.log("Sailor recuperato con successo.");
   }
-  getAll(fn){
-    const request = sailScoreDB.openDB();
-
-    request.onerror = function(event) {
-      console.log("Errore nell'apertura del database: " + event.target.errorCode);
-    };
-    request.onsuccess = function(event) {
-      const db = event.target.result;
-      const transaction = db.transaction(["Sailors"], "readonly");
-      const store = transaction.objectStore("Sailors");
-      const res = store.getAll();
-      res.onsuccess = (e) => { 
-        sailScoreDB.sailor = e.target.result.map((b) => new Sailor(b));
-        if(fn){
-          fn(e);
-        }
-      };
-
+  delete(id, fn = null){
+    sailScoreDB.deleteIDBObject(this.osName(), id, fn);
+  }
+  
+  getAll(fn = null){
+    const onsuccess = (e) => {
+      sailScoreDB.boatclass = e.target.result.map((b) => new BoatClass(b));
       console.log("Sailors recuperati con successo.");
+      if(fn){
+        fn(e);
+      }
+      sailScoreDB.sailor = e.target.result.map((b) => new Sailor(b));
     };
+    sailScoreDB.getAllIDBObject(this.osName(), onsuccess);
   }
 }
 
@@ -543,6 +567,13 @@ function stripHtml(str){
 }
 
 /* IMPORT EXPORT FUNCTIONS */
+function dropDatabase(confirm = false){
+  if(confirm){
+    pop.confirm('Drop Database', 'Do you really want drop database? All data will be lost!');
+  }else{
+    pop.notify('Drop Database', 'Database dropped successfully');
+  }
+}
 
 function importPortsmouthYardstick(confirm = false){
   const url = 'https://andrea-buzz.github.io/SailScore/data/py-list.json';
@@ -708,38 +739,6 @@ function renderTable(target, proto = Object, data, useActions = false, fields=nu
       document.querySelectorAll(`[data-role="delete_${object_name}"]`).forEach(b => b.addEventListener('click', window[`delete_${object_name}`]));
     }
   }
-  
-  
-  
-  /*
-  let p = new Promise(fn);
-  
-  p.then((e) => {
-      let res = e.target.result;
-      
-      if(0 === res.length) {
-        return [`<div>Sorry, nothing to show!</div>`];
-      }else{
-        this.keys = Object.keys(new proto(res[0]));
-        return res.map(
-          (d) => {
-            let b = new proto(d);
-            const object_name = this.object_name;
-            let td = this.keys.map((h) => `<span class="td ${h}">${b[h]}</span>`).join('');
-            return `<div class="tr">${td}<span class="td actions">
-        <button type="button" data-role="edit_${object_name}" data-id="${b.id}"> &#9998; </button>
-        <button type="button" data-role="delete_${object_name}" data-id="${b.id}"> &#128465;&#65039; </button>
-      </span></div>`;});
-      }
-    }).then((bc) => {
-      const object_name = this.object_name;
-      let headers = this.keys.map((h) => `<span class="th ${h}">${h}</span>`).join('');
-      bc.unshift(`<div class="tr thead">${headers}<span class="th actions"></span></div>`);
-      this.target.innerHTML = '<div class="data-table">' + bc.join('\n') + '</div>';
-      document.querySelectorAll(`[data-role="edit_${object_name}"]`).forEach(b => b.addEventListener('click', window[`edit_${object_name}`]));
-      document.querySelectorAll(`[data-role="delete_${object_name}"]`).forEach(b => b.addEventListener('click', window[`delete_${object_name}`]));
-    });
-    */
 }
 
 /* SAILORS */
@@ -842,7 +841,9 @@ function save_sailor(e){
 
 function showBoatClasses(){
   const onsuccess = (e) => {
-    renderTable(document.querySelector('[data-list="boatclass"]'), BoatClass, e.target.result, true, null );
+    const fields = [{label:'id', field:'id'}, {label:'Boat Class', field:'name'}, 
+                  {label:'Rating', field:'rating'}];
+    renderTable(document.querySelector('[data-list="boatclass"]'), BoatClass, e.target.result, true, fields );
   };
   boatClassSingleton.getAll( onsuccess );
 }
@@ -857,7 +858,7 @@ function add_boatclass(e) {
         <label>Name</label> <div class="form-control"><input type="text" name="name" /></div>
       </div>
       <div class="field-group">
-        <label>Rating</label> <div class="form-control"><input type="text" name="rating" /></div>
+        <label>Rating</label> <div class="form-control"><input type="number" name="rating" /></div>
       </div>
       <div class="form-buttons">
         <input type="hidden" name="id" />
@@ -872,12 +873,12 @@ function edit_boatclass(e) {
   boatClassSingleton.get(Number(e.currentTarget.getAttribute('data-id')), function(ev){
     const title = 'Edit Boat Class';
     let s = ev.currentTarget.result;
-    const form = `<form data-role="form-sailor">
+    const form = `<form data-role="form-boatclass">
       <div class="field-group">
         <label>Name</label> <div class="form-control"><input type="text" name="name" value="${s.name}" /></div>
       </div>
       <div class="field-group">
-        <label>Rating</label> <div class="form-control"><input type="text" name="rating" value="${s.rating}" /></div>
+        <label>Rating</label> <div class="form-control"><input type="number" name="rating" value="${s.rating}" /></div>
       </div>
       <div class="form-buttons">
         <input type="hidden" name="id" value="${s.id}" />
@@ -908,6 +909,135 @@ function save_boatclass(e){
   boatClassSingleton.getAll(showBoatClasses);
   removeFromPopup();
 }
+
+/* Club */
+
+function showClub(){
+  const onsuccess = (e) => {
+    const fields = [{label:'id', field:'id'}, {label:'Name', field:'name'}, 
+                  {label:'Address', field:'address'}, {label:'Location', field:'location'}];
+    renderTable(document.querySelector('[data-list="Club"]'), Club, e.target.result, true, fields );
+  };
+  clubSingleton.getAll( onsuccess );
+}
+
+showClub();
+document.querySelector('[data-role="add_club"]').addEventListener('click', add_club);
+
+function add_club(e) {
+  const title = 'Add Club';
+  const form = `<form data-role="form-club">
+      <div class="field-group">
+        <label>Name</label> <div class="form-control"><input type="text" name="name" /></div>
+      </div>
+      <div class="field-group">
+        <label>Address</label> <div class="form-control"><input type="text" name="address" /></div>
+      </div>
+      <div class="field-group">
+        <label>Location</label> <div class="form-control"><input type="text" name="location" /></div>
+      </div>
+      <div class="form-buttons">
+        <input type="hidden" name="id" />
+        <button type="reset">Reset</button> <button type="button" data-role="save_club">Save</button>
+      </div>
+    </form>`;
+  addToPopup(title, form);
+  document.querySelector('[data-role="save_club"]').addEventListener('click', save_club);
+}
+
+function edit_club(e) {
+  clubSingleton.get(Number(e.currentTarget.getAttribute('data-id')), function(ev){
+    const title = 'Edit Club';
+    let s = ev.currentTarget.result;
+    const form = `<form data-role="form-club">
+      <div class="field-group">
+        <label>Name</label> <div class="form-control"><input type="text" name="name" value="${s.name}" /></div>
+      </div>
+      <div class="field-group">
+        <label>Address</label> <div class="form-control"><input type="text" name="address" value="${s.address}" /></div>
+      </div>
+      <div class="field-group">
+        <label>Location</label> <div class="form-control"><input type="text" name="location" value="${s.location}" /></div>
+      </div>
+      <div class="form-buttons">
+        <input type="hidden" name="id" value="${s.id}" />
+        <button type="reset">Reset</button> <button type="button" data-role="save_club">Save</button>
+      </div>
+    </form>`;
+    addToPopup(title, form);
+    document.querySelector('[data-role="save_club"]').addEventListener('click', save_club);
+  });
+}
+
+function delete_club(e){
+  const item_id = Number(e.currentTarget.getAttribute('data-id'));  
+  pop.confirm('Delete Club', 'Really want delete the record?',
+    function(){
+      clubSingleton.delete(item_id, function(){
+          clubSingleton.getAll(showClub);
+        });
+    });
+};
+
+function save_club(e){
+  const fields = e.currentTarget.parentElement.parentElement.querySelectorAll('input[name]');
+  const ff = [...fields].map(f => ({name: f.name, value: f.value}));
+  const club = new Club();
+  club._setFromArray = ff;
+  clubSingleton.save(club);
+  clubSingleton.getAll(showClub);
+  removeFromPopup();
+}
+
+/* Regatta */
+
+function showRegatta(){
+  const onsuccess = (e) => {
+    const fields = [{label:'id', field:'id'}, {label:'Name', field:'name'}, {label:'Start Date', field:'startDate'}, 
+                  {label:'End Date', field:'endDate'}, {label:'Club', field:'clubName'}];
+    renderTable(document.querySelector('[data-list="regatta"]'), Regatta, e.target.result, true, fields );
+  };
+  regattaSingleton.getAll( onsuccess );
+}
+
+showRegatta();
+document.querySelector('[data-role="add_regatta"]').addEventListener('click', add_regatta);
+
+function add_regatta(e) {
+  const title = 'Add Regatta';
+  let club = JSON.stringify( new Club({name:'Circolo Velico Ardizio'} ));
+  const form = `<form data-role="form-regatta">
+      <div class="field-group">
+        <label>Name</label> <div class="form-control"><input type="text" name="name" /></div>
+      </div>
+      <div class="field-group">
+        <label>Start Date</label> <div class="form-control"><input type="date" name="startdate" /></div>
+      </div>
+      <div class="field-group">
+        <label>End Date</label> <div class="form-control"><input type="date" name="club" name="endate" /></div>
+      </div>
+      <div class="field-group">
+        <label>Club</label> <div class="form-control"><input type="text" value="" /></div>
+      </div>
+      <div class="form-buttons">
+        <input type="hidden" name="club" value=${club} />
+        <input type="hidden" name="id" />
+        <button type="reset">Reset</button> <button type="button" data-role="save_club">Save</button>
+      </div>
+    </form>`;
+  addToPopup(title, form);
+  document.querySelector('[data-role="form-regatta"] [name="club"]')
+      .addEventListener('keyup', (e) => {
+          let t = e.currentTarget;
+          let club = sailScoreDB.cached.club(t.value)[0];
+          t.data = club;
+          console.log(club);
+      });
+  //document.querySelector('[data-role="save_regatta"]').addEventListener('click', save_regatta);
+}
+
+
+/* POP */
 
 var pop = {
   response : function(res){
