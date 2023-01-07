@@ -1,13 +1,13 @@
 /* DATABASE */
 class SailScoreDB {
-  //#cached = {};
+  
   constructor() {
     Object.defineProperty(this, '_cached', {value: {}, writable: true, enumerable: false, configurable: true });
     this.dbName = 'SailScoreDB';
     this.conn = this.openDB();
     this.cached = true;
-    this.entities = { Club: 'Club', Sailor: 'Sailors', Regatta: 'Regattas', Race: 'Race', 
-                      Competitor:'Competitors', BoatClass:'BoatClasses', Result:'Result' };
+    this.entities = { Club: 'Club', Sailor: 'Sailor', Regatta: 'Regatta', Race: 'Race', 
+                      Competitor:'Competitor', BoatClass:'BoatClass', Result:'Result' };
     const objList = Object.keys(this.entities).map((i) => this.entities[i]);
     const actionList = ['Delete', 'Save', 'Get', 'GetAll'];
     this.eventList = [];
@@ -26,11 +26,11 @@ class SailScoreDB {
         console.log( "Error loading database.");
       };
       this.createClubStore(db);
-      this.createRegattasStore(db);
-      this.createCompetitorsStore(db);
-      this.createRacesStore(db);
-      this.createBoatClassesStore(db);
-      this.createSailorsStore(db);
+      this.createRegattaStore(db);
+      this.createCompetitorStore(db);
+      this.createRaceStore(db);
+      this.createBoatClassStore(db);
+      this.createSailorStore(db);
     };
     
     r.onerror = function(event) {
@@ -38,14 +38,30 @@ class SailScoreDB {
     };
     return r;
   }
-  
+  deleteDatabase( force = false){
+    if(force){
+      const r = window.indexedDB.deleteDatabase(this.dbName);
+
+      r.onerror = (event) => {
+        console.error("Error deleting database.");
+      };
+
+      r.onsuccess = (event) => {
+        console.log("Database deleted successfully");
+
+        console.log(event.result); // should be undefined
+      };
+    }else{
+      console.log("use force=true if you really want delete Database");
+    }
+  }
   createClubStore(db = this.conn.result){
     const o = db.createObjectStore(this.entities.Club, { keyPath: "id", autoIncrement: true } ); 
     o.createIndex("id", "id", { unique: true });
     o.createIndex("name", "name", { unique: false });
   }
   
-  createRegattasStore(db){
+  createRegattaStore(db){
     const o = db.createObjectStore(this.entities.Regatta, { keyPath: "id", autoIncrement: true } ); 
     o.createIndex("id", "id", { unique: true });
     o.createIndex("name", "name", { unique: false });
@@ -58,20 +74,20 @@ class SailScoreDB {
     o.createIndex("name", "name", { unique: false });
   }
   
-  createRacesStore(db){
+  createRaceStore(db){
     const o = db.createObjectStore(this.entities.Race, { keyPath: "id", autoIncrement: true } ); 
     o.createIndex("id", "id", { unique: true });
     o.createIndex("regatta_id", "regatta_id", { unique: false });
     o.createIndex("name", "name", { unique: false });
   }
   
-  createCompetitorsStore(db){
+  createCompetitorStore(db){
     const o = db.createObjectStore(this.entities.Competitor, { keyPath: "id", autoIncrement: true } ); 
     o.createIndex("id", "id", { unique: true });
     o.createIndex("name", "name", { unique: false });
   }
   
-  createSailorsStore(db){
+  createSailorStore(db){
     const o = db.createObjectStore(this.entities.Sailor, { keyPath: "id", autoIncrement: true } ); 
     o.createIndex("id", "id", { unique: true });
     o.createIndex("fiv", "fiv", { unique: false });
@@ -80,7 +96,7 @@ class SailScoreDB {
     //  o.createIndex("fullname", ["firstname", "lastname", birtDate], { unique: true });
   }
   
-  createBoatClassesStore(db){
+  createBoatClassStore(db){
     const o = db.createObjectStore(this.entities.BoatClass, { keyPath: "id", autoIncrement: true } ); 
     o.createIndex("id", "id", { unique: true });
     o.createIndex("name", "name", { unique: false });
@@ -339,12 +355,13 @@ class BoatClass extends entity{
 }
 
 class Regatta extends entity{
-  constructor(b = {name:'', startdate: new Date(), enddate: new Date(), club: {}, id: null}) {
+  constructor(b = {name:'', startdate: new Date(), enddate: new Date(), club: {}, competitors: [], id: null}) {
     super(b);
     this.name = stripHtml(b.name);
     this.startDate = b.startdate;
     this.endDate = b.enddate;
     this.club = b.club;
+    this.competitors = b.competitors?b.competitors:[];
   }
   get startDate(){
     return ( 0 === this.startdate)?'':new Date( this.startdate ).toLocaleDateString();
@@ -567,10 +584,12 @@ function stripHtml(str){
 }
 
 /* IMPORT EXPORT FUNCTIONS */
-function dropDatabase(confirm = false){
+function dropDatabase( confirm = false ){
   if(confirm){
     pop.confirm('Drop Database', 'Do you really want drop database? All data will be lost!');
+    pop.fn_yes = () => sailScoreDB.deleteDatabase(true);
   }else{
+    sailScoreDB.deleteDatabase(true);
     pop.notify('Drop Database', 'Database dropped successfully');
   }
 }
@@ -1030,7 +1049,7 @@ function add_regatta(e) {
       .addEventListener('keyup', (e) => {
           let t = e.currentTarget;
           let club = sailScoreDB.cached.club(t.value)[0];
-          t.data = club;
+          t.dataset.value = club;
           console.log(club);
       });
   //document.querySelector('[data-role="save_regatta"]').addEventListener('click', save_regatta);
