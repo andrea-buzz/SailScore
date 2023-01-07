@@ -1135,6 +1135,14 @@ function edit_regatta(e) {
     addToPopup(title, form);
     document.querySelector('[data-role="save_regatta"]').addEventListener('click', save_regatta);
     document.querySelector('form[data-role="form-regatta"] input[name="club"]').dataset = {value: JSON.stringify(s.club)};
+    document.querySelector('form[data-role="form-regatta"] input[name="club"]')
+      .addEventListener('keyup', function(e){
+          let t = e.currentTarget;
+          let club = new Club( sailScoreDB.cached.club(t.value)[0] );
+          t.dataset.value = JSON.stringify(club);
+          setTimeout(() => t.value = club.name, 1000);
+          console.log(club);
+      }, { passive: false });
     document.querySelector('form[data-role="form-regatta"] button[name="competitors"]').dataset = {value: JSON.stringify(s.competitors)};
     
   });
@@ -1153,9 +1161,14 @@ function delete_regatta(e){
 
 function save_regatta(e){
   const fields = e.currentTarget.parentElement.parentElement.querySelectorAll('input[name]');
-  const ff = [...fields].map(f => ({name: f.name, value: f.dataset.value?f.dataset.value:f.value}));
+  const f_club = e.currentTarget.parentElement.parentElement.querySelector('[name="club"]');
+  const ff = [...fields].map(f => ({name: f.name, value: f.value}));
   const regatta = new Regatta();
   regatta._setFromArray = ff;
+  if(f_club.dataset.value){
+    const c = new Club(JSON.parse(f_club.dataset.value));
+    regatta.club = c;
+  }
   regattaSingleton.save(regatta);
   regattaSingleton.getAll(showRegatta);
   removeFromPopup();
