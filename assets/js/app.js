@@ -356,13 +356,14 @@ class BoatClass extends entity{
 }
 
 class Regatta extends entity{
-  constructor(b = {name:'', startdate: new Date(), enddate: new Date(), club: {}, competitors: [], id: null}) {
+  constructor(b = {name:'', startdate: new Date(), enddate: new Date(), usePY:false, club: {}, competitors: [], id: null}) {
     super(b);
     //  s.birthdate?s.birthdate:0;
     this.name = stripHtml(b.name);
     this.startDate = b.startdate?b.startdate:0;
     this.endDate = b.enddate?b.enddate:0;
-    this.club = b.club;
+    this.UsePY = b.usePY;
+    this.Club = b.club;
     this.competitors = b.competitors?b.competitors:[];
   }
   get startDate(){
@@ -379,14 +380,31 @@ class Regatta extends entity{
     let dd = (typeof d === 'number')? new Date(d): new Date(Date.parse(d));
     this.enddate = dd.toISOString().substr(0,dd.toISOString().indexOf('T'));
   }
-  set club(c) {
-    this._club = ('string' === typeof c)?JSON.parse(c):Object.assign({},c);
+  set Club(c) {
+    let o = {};
+    try{
+      o = ('string' === typeof c)?JSON.parse(c):c;
+    }
+    catch(e){
+      console.log(e);
+      o.name = c;
+    }
+    finally{
+      this.club = new Club(o);
+    }
   }
-  get club() {
-    return this._club;
+  get Club() {
+    return this.club;
   }
   get clubName() {
-    return ('string' === typeof this._club)?this._club:(new Club(this._club)).name;
+    return ('string' === typeof this.club)?this.club:(new Club(this.club)).name;
+  }
+  set UsePY(o){
+    if ('string' === typeof o){
+      this.usePY = Boolean(o === 'true');
+    }else{
+      this.usePY = Boolean(o === true);
+    }
   }
 }
 
@@ -1064,6 +1082,7 @@ document.querySelector('[data-role="add_regatta"]').addEventListener('click', ad
 function add_regatta(e) {
   const title = 'Add Regatta';
   let club = JSON.stringify( new Club({name:'Circolo Velico Ardizio'} ));
+  
   const form = `<form data-role="form-regatta">
       <div class="field-group">
         <label>Name</label> <div class="form-control"><input type="text" name="name" /></div>
@@ -1073,6 +1092,9 @@ function add_regatta(e) {
       </div>
       <div class="field-group">
         <label>End Date</label> <div class="form-control"><input type="date" name="endate" /></div>
+      </div>
+      <div class="field-group">
+        <label>Use PY</label> <div class="form-control"><input type="checkbox" name="usePY" value="false" onclick="this.value=this.checked" /></div>
       </div>
       <div class="field-group">
         <label>Club</label> <div class="form-control"><input type="text" name="club" value="" /></div>
@@ -1111,6 +1133,8 @@ function edit_regatta(e) {
   regattaSingleton.get(Number(e.currentTarget.getAttribute('data-id')), function(ev){
     const title = 'Edit Regatta';
     let s = new Regatta( ev.currentTarget.result );
+    let usePYchecked = s.usePY?'checked=="checked"':'';
+    let UsePY = s.usePY.toString();
     const form = `<form data-role="form-regatta">
       <div class="field-group">
         <label>Name</label> <div class="form-control"><input type="text" name="name" value="${s.name}" /></div>
@@ -1122,7 +1146,10 @@ function edit_regatta(e) {
         <label>End Date</label> <div class="form-control"><input type="date" name="endate" value="${s.enddate}"  /></div>
       </div>
       <div class="field-group">
-        <label>Club</label> <div class="form-control"><input type="text" name="club" value="" /></div>
+        <label>Use PY</label> <div class="form-control"><input type="checkbox" name="usePY" ${usePYchecked} value="${UsePY}" onclick="this.value=this.checked" /></div>
+      </div>
+      <div class="field-group">
+        <label>Club</label> <div class="form-control"><input type="text" name="club" value="${s.clubName}" /></div>
       </div>
       <div class="field-group">
         <label>Competitors</label> <div class="form-control"><button type="button" name="competitors">Add competitor</button></div>
@@ -1134,7 +1161,7 @@ function edit_regatta(e) {
     </form>`;
     addToPopup(title, form);
     document.querySelector('[data-role="save_regatta"]').addEventListener('click', save_regatta);
-    document.querySelector('form[data-role="form-regatta"] input[name="club"]').dataset = {value: JSON.stringify(s.club)};
+    document.querySelector('form[data-role="form-regatta"] input[name="club"]').dataset.value = JSON.stringify(s.Club);
     document.querySelector('form[data-role="form-regatta"] input[name="club"]')
       .addEventListener('keyup', function(e){
           let t = e.currentTarget;
@@ -1142,7 +1169,7 @@ function edit_regatta(e) {
           t.dataset.value = JSON.stringify(club);
           setTimeout(() => t.value = club.name, 1000);
           console.log(club);
-      }, { passive: false });
+      }, { passive: true });
     document.querySelector('form[data-role="form-regatta"] button[name="competitors"]').dataset = {value: JSON.stringify(s.competitors)};
     
   });
@@ -1165,9 +1192,10 @@ function save_regatta(e){
   const ff = [...fields].map(f => ({name: f.name, value: f.value}));
   const regatta = new Regatta();
   regatta._setFromArray = ff;
+  regatta.UsePY = regatta.usePY;
   if(f_club.dataset.value){
-    const c = new Club(JSON.parse(f_club.dataset.value));
-    regatta.club = c;
+    const c = JSON.parse(f_club.dataset.value);
+    regatta.Club = c;
   }
   regattaSingleton.save(regatta);
   regattaSingleton.getAll(showRegatta);
