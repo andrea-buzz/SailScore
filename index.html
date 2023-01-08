@@ -51,17 +51,18 @@
             <div class="container">
                 <article>
                   <header>
-                      <h2>Regattas</h2>
-                      <div class="field-group">
-                        <button type="button" data-role="add_regatta"> &#10133; </button>
-                      </div>
+                    <h2>Regattas</h2>
+                    <div class="field-group">
+                      <button type="button" data-role="add_regatta"> &#10133; </button>
+                    </div>
                   </header>
-                    <div class="content" data-list="regatta"></div>
+                  <div class="content" data-role="form-container"></div>
+                  <div class="content" data-list="regatta"></div>
                 </article>
               </div>
         </section>
       
-        <section data-block="competitors">
+        <section data-block="competitor">
             <div class="container">
                 <article>
                   <header>
@@ -70,21 +71,22 @@
                         <button type="button" data-role="add_competitor"> &#10133; </button>
                       </div>
                   </header>
-                    <div class="content" data-list="competitors"></div>
+                    <div class="content" data-list="competitor"></div>
                 </article>
               </div>
         </section>
-        <section data-block="sailors">
+        <section data-block="sailor">
             <div class="container">
                 <article>
                   <header>
                       <h2>Sailors</h2>
                       <div class="field-group">
                         <button type="button" data-role="add_sailor"> &#10133; </button> 
-                        <div class="form-control"><select name="sailor"><option value=""> ... </option></select></div>
+                        <!--<div class="form-control"><select name="sailor"><option value=""> ... </option></select></div>
+                        <div class="form-control"><input type="time" name="starttime"  step="2" /></div>-->
                       </div>
                   </header>
-                    <div class="content" data-list="sailors"></div>
+                    <div class="content" data-list="sailor"></div>
                 </article>
               </div>
         </section>

@@ -121,15 +121,22 @@ a {
 .data-table.tbl-club > .tr > .location {
   flex-basis: 20%;
 }
+.data-table.tbl-regatta > .tr > .startdate, .data-table.tbl-regatta > .tr > .enddate {
+  flex-basis: 80px;
+}
+.data-table.tbl-regatta > .tr > .clubname {
+  flex-basis: 20%;
+}
+
 
 /* COMPETITORS */
 
-div[data-list="competitors"] {
+div[data-list="competitor"] {
   flex-grow: 1;
   display: flex;
   flex-direction: column;
 }
-div[data-list="competitors"] .competitor {
+div[data-list="competitor"] .competitor {
   padding:8px 2px;
   display: flex;
   justify-content: space-between;
@@ -138,20 +145,20 @@ div[data-list="competitors"] .competitor {
   transition: .5s order linear .1s, 1.5s filter ease 1s, 1.5s background-color ease 1s;
   background-color: transparent;
 }
-div[data-list="competitors"] .competitor.pulled-top {
+div[data-list="competitor"] .competitor.pulled-top {
   transition:  .5s order linear .1s, .2s filter ease 0s;
   background-color: #efefef;
   filter:invert(100%);
   box-shadow: 0 0 1px 1px #777;
 }
-div[data-list="competitors"] .competitor[data-status="started"] {
+div[data-list="competitor"] .competitor[data-status="started"] {
   order: 1000;
 }
 
-div[data-list="competitors"] .competitor span {
+div[data-list="competitor"] .competitor span {
   flex-basis: 12%;
 }
-div[data-list="competitors"] .competitor span.crew{
+div[data-list="competitor"] .competitor span.crew{
   flex-basis: 40%;
 }
 button[data-role] {
@@ -161,8 +168,8 @@ button[data-role] {
 button[data-role] + button[data-role] {
   margin-left: 10px;
 }
-div[data-list="competitors"] .competitor button[data-role="pull-top"], 
-div[data-list="competitors"] .competitor button[data-role="set-arrived"], 
+div[data-list="competitor"] .competitor button[data-role="pull-top"], 
+div[data-list="competitor"] .competitor button[data-role="set-arrived"], 
 button[data-role="edit_sailor"] {
   min-width: 32px;
   min-height: 32px;
@@ -186,7 +193,7 @@ button[data-role="add_sailor"]{
   background-size: 24px 24px;
 }
 
-div[data-list="sailors"] .sailor {
+div[data-list="sailor"] .sailor {
   display: flex;
   justify-content: space-between;
   margin-bottom: 15px;
@@ -194,27 +201,30 @@ div[data-list="sailors"] .sailor {
   
 }
 
-div[data-list="sailors"] .sailor span.birthdate {
+div[data-list="sailor"] .sailor span.birthdate {
   display: none;
 }
 /*
-div[data-list="sailors"] .sailor span.fiv {
+div[data-list="sailor"] .sailor span.fiv {
   flex-basis: 25%;
 }
-div[data-list="sailors"] .sailor span {
+div[data-list="sailor"] .sailor span {
   flex-basis: 15%;
 }
 */
-div[data-list="sailors"] .sailor span.fullname {
+div[data-list="sailor"] .sailor span.fullname {
   flex-basis: 44%;
   overflow-x: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
-div[data-list="sailors"] .sailor span.actions {
+div[data-list="sailor"] .sailor span.actions {
   flex-basis: 94px;
   text-align: right;
   white-space: nowrap
+}
+[data-role="form-container"] > form {
+  margin-bottom: 15px;
 }
 .field-group {
   margin-bottom: 15px;
@@ -237,6 +247,9 @@ div[data-list="sailors"] .sailor span.actions {
 }
 .field-group input[type="date"] {
   width: 100%; 
+}
+.field-group input[type="radio"], .field-group input[type="checkbox"]{
+  width: fit-content;
 }
 .form-buttons {
   display: flex;
@@ -423,11 +436,14 @@ div[data-list="sailors"] .sailor span.actions {
     color:#333;
     font-weight: bold;
   }
-  div[data-list="sailors"] .sailor span.birthdate {
+  div[data-list="sailor"] .sailor span.birthdate {
     display: block;
   }
   .data-table.tbl-sailor > .tr > .birthdate {
     display: block;
+  }
+  .field-group label {
+    flex-basis: 10%;
   }
 }
 

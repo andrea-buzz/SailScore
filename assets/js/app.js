@@ -41,18 +41,15 @@ class SailScoreDB {
   deleteDatabase( force = false){
     if(force){
       const r = window.indexedDB.deleteDatabase(this.dbName);
-
-      r.onerror = (event) => {
+      r.onerror = (e) => {
         console.error("Error deleting database.");
       };
-
-      r.onsuccess = (event) => {
+      r.onsuccess = (e) => {
         console.log("Database deleted successfully");
-
-        console.log(event.result); // should be undefined
+        console.log(e.result); // should be undefined
       };
     }else{
-      console.log("use force=true if you really want delete Database");
+      console.log("use force=true if you really want delete Database " + this.dbName);
     }
   }
   createClubStore(db = this.conn.result){
@@ -84,6 +81,7 @@ class SailScoreDB {
   createCompetitorStore(db){
     const o = db.createObjectStore(this.entities.Competitor, { keyPath: "id", autoIncrement: true } ); 
     o.createIndex("id", "id", { unique: true });
+    o.createIndex("regatta_id", "regatta_id", { unique: false });
     o.createIndex("name", "name", { unique: false });
   }
   
@@ -175,30 +173,41 @@ class SailScoreDB {
     const db = this.conn.result;
     const t = db.transaction([osName], "readwrite");
     const s = t.objectStore(osName);
+    if(['competitor', 'race', 'result'].indexOf(osName.toLowerCase()) > -1){
+      //  s.createIndex("regatta_id", "regatta_id", { unique: false });
+    }
     const q = s.clear();
     if(fn){
       q.onsuccess = fn;
     }
   }
-  clearStoreBoatClasses(fn = null ){
+  clearStoreBoatClass(fn = null ){
     let osName = this.entities.BoatClass;
-    clearObjectStore(osName, fn );
+    this.clearObjectStore(osName, fn );
   }
   clearStoreClub(fn = null ){
     let osName = this.entities.Club;
-    clearObjectStore(osName, fn );
+    this.clearObjectStore(osName, fn );
   }
-  clearStoreSailors(fn = null ){
+  clearStoreSailor(fn = null ){
     let osName = this.entities.Sailor;
-    clearObjectStore(osName, fn );
+    this.clearObjectStore(osName, fn );
   }
-  clearStoreRegattas(fn = null ){
+  clearStoreRegatta(fn = null ){
     let osName = this.entities.Regatta;
-    clearObjectStore(osName, fn );
+    this.clearObjectStore(osName, fn );
   }
-  clearStoreRaces(fn = null ){
+  clearStoreRace(fn = null ){
     let osName = this.entities.Race;
-    clearObjectStore(osName, fn );
+    this.clearObjectStore(osName, fn );
+  }
+  clearStoreCompetitor(fn = null ){
+    let osName = this.entities.Competitor;
+    this.clearObjectStore(osName, fn );
+  }
+  clearStoreResult(fn = null ){
+    let osName = this.entities.Result;
+    this.clearObjectStore(osName, fn );
   }
   /* Cached data */
   
@@ -317,13 +326,15 @@ class Competitor extends entity {
   constructor(c = {regatta_id: 0, helm_id: 0, crew_ids:[], boat_id:null, sailNumber:'', id: null}) {
     super(c);
     //this.defineProperty = {_data: {value: {}, writable: true, enumerable: true, configurable: true}};
+    let private_data = '#data';
+    this[private_data] = {};
     this.regatta_id = c.regatta_id;
     this.helm_id = c.helm_id;
     this.crew_ids = c.crew_ids;
     this.sailNumber = stripHtml(c.sailNumber);
     this.helm = {};
     this.crew = [];
-    this['#data'] = {};
+    
   }
   set _data(o){
     let n = o;
@@ -333,13 +344,15 @@ class Competitor extends entity {
     return d;
   }
   set helm(o){
-    this['#data'].helm = o;
+    this['#data'].helm = (o instanceof Sailor)?o:new Sailor(o);
+    this.helm_id = this.helm.id; 
   }
   get helm(){
     return this['#data'].helm;
   }
   set crew(o){
-    this['#data'].crew = o;
+    this['#data'].crew = o.map( (s) => (s instanceof Sailor)?s:new Sailor(s) );
+    this.crew_ids = this.crew.map((s) => s.id);
   }
   get crew(){
     return this['#data'].crew;
@@ -383,21 +396,21 @@ class Regatta extends entity{
   set Club(c) {
     let o = {};
     try{
-      o = ('string' === typeof c)?JSON.parse(c):c;
+      o = ('string' === typeof c)? JSON.parse(c): c;
     }
     catch(e){
       console.log(e);
       o.name = c;
     }
     finally{
-      this.club = new Club(o);
+      this.club = (o instanceof Club)? o: new Club(o);
     }
   }
   get Club() {
     return this.club;
   }
   get clubName() {
-    return ('string' === typeof this.club)?this.club:(new Club(this.club)).name;
+    return ('string' === typeof this.club)? this.club: this.Club.name;
   }
   set UsePY(o){
     if ('string' === typeof o){
@@ -821,13 +834,13 @@ function renderTable(target, proto = Object, data, useActions = false, fields=nu
 
 function showSailors(e){
   
-  let tag_sailors = document.querySelector('[data-list="sailors"]');
+  let tag_sailors = document.querySelector('[data-list="sailor"]');
   const fields = [{label:'id', field:'id'}, {label:'Full Name', field:'fullName'}, 
                   {label:'Birth Date', field:'birthDate'}, {label:'FIV n°', field:'fiv'}];
   renderTable(tag_sailors, Sailor, e.target.result, true, fields);
   
   /*
-  let tag_sailors = document.querySelector('[data-list="sailors"]');
+  let tag_sailors = document.querySelector('[data-list="sailor"]');
   let sailors = e.currentTarget.result;
   tag_sailors.innerHTML = '';
   sailors.forEach(d => {const s = new Sailor(d); tag_sailors.insertAdjacentHTML('beforeEnd',`<div class="sailor">
@@ -1104,10 +1117,14 @@ function add_regatta(e) {
       </div>
       <div class="form-buttons">
         <input type="hidden" name="id" />
-        <button type="reset">Reset</button> <button type="button" data-role="save_regatta">Save</button>
+        <button type="reset">Cancel</button> <button type="button" data-role="save_regatta">Save</button>
       </div>
     </form>`;
-  addToPopup(title, form);
+  //  addToPopup(title, form);
+  document.querySelector('[data-block="regatta"] [data-role="form-container"]').insertAdjacentHTML('beforeEnd', form);
+  document.querySelectorAll('[data-role="form-container"] button[type="reset"]').forEach( (b)=>
+          b.addEventListener('click', (e) => 
+          e.currentTarget.parentElement.parentElement.remove()) );
   document.querySelector('form[data-role="form-regatta"] input[name="club"]')
       .addEventListener('keyup', function(e){
           let t = e.currentTarget;
@@ -1117,7 +1134,7 @@ function add_regatta(e) {
           console.log(club);
       }, { passive: false });
       /*
-  document.querySelector('form[data-role="form-regatta"] input[name="competitors"]')
+  document.querySelector('form[data-role="form-regatta"] input[name="competitor"]')
       .addEventListener('keyup', function(e){
           let t = e.currentTarget;
           let sailor = new Sailor( sailScoreDB.cached.sailor(t.value)[0] );
@@ -1156,10 +1173,14 @@ function edit_regatta(e) {
       </div>
       <div class="form-buttons">
         <input type="hidden" name="id" value="${s.id}" />
-        <button type="reset">Reset</button> <button type="button" data-role="save_regatta">Save</button>
+        <button type="reset">Cancel</button> <button type="button" data-role="save_regatta">Save</button>
       </div>
     </form>`;
-    addToPopup(title, form);
+    //addToPopup(title, form);
+    document.querySelector('[data-block="regatta"] [data-role="form-container"]').insertAdjacentHTML('beforeEnd', form);
+    document.querySelectorAll('[data-role="form-container"] button[type="reset"]').forEach( (b)=>
+            b.addEventListener('click', (e) => 
+            e.currentTarget.parentElement.parentElement.remove()) );
     document.querySelector('[data-role="save_regatta"]').addEventListener('click', save_regatta);
     document.querySelector('form[data-role="form-regatta"] input[name="club"]').dataset.value = JSON.stringify(s.Club);
     document.querySelector('form[data-role="form-regatta"] input[name="club"]')
@@ -1199,7 +1220,9 @@ function save_regatta(e){
   }
   regattaSingleton.save(regatta);
   regattaSingleton.getAll(showRegatta);
-  removeFromPopup();
+  //removeFromPopup();
+  document.querySelector('[data-role="form-regatta"]').remove();
+  //document.querySelector('[data-block="regatta"] [data-role="form-container"]').innerHTML = '';
 }
 
 /* POP */
@@ -1287,7 +1310,7 @@ function show_started_competitors(){
     {name: "Guido Rocchi", sail_number: "209111", boat_class: "ILCA 7"},
     {name: "Max Cinquepalmi", sail_number: "183555", boat_class: "ILCA 7"}
   ];
-  let tag_competitors = document.querySelector('[data-list="competitors"]');
+  let tag_competitors = document.querySelector('[data-list="competitor"]');
   competitors.forEach(c => tag_competitors.insertAdjacentHTML('afterBegin',`
 <div class="competitor" data-status="started"> 
   <button type="button" data-role="pull-top">&#8679;</button> 
@@ -1313,5 +1336,7 @@ show_started_competitors();
 if ("serviceWorker" in navigator) {
   if(location.origin !== 'file://'){
     navigator.serviceWorker.register("./sw.js");
+  }else{
+    document.querySelector('link[rel="manifest"]').remove();
   }
 }
