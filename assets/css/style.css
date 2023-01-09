@@ -116,16 +116,28 @@ a {
   flex-grow:1;
 }
 .data-table.tbl-club > .tr > .address {
+  display: none;
   flex-basis: 20%;
 }
 .data-table.tbl-club > .tr > .location {
   flex-basis: 20%;
 }
-.data-table.tbl-regatta > .tr > .startdate, .data-table.tbl-regatta > .tr > .enddate {
+.data-table.tbl-regatta > .tr > .startdate {
   flex-basis: 80px;
+}
+.data-table.tbl-regatta > .tr > .enddate {
+  display: none;
+  flex-basis: 80px;
+}
+.data-table.tbl-regatta > .tr > .name {
+  flex-basis: 25%;
 }
 .data-table.tbl-regatta > .tr > .clubname {
   flex-basis: 20%;
+  direction: rtl;
+  overflow-x: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 
@@ -433,17 +445,26 @@ div[data-list="sailor"] .sailor span.actions {
   }
   #global-nav > ul li a:hover{
     background-color: #fff;
-    color:#333;
+    color: #333;
     font-weight: bold;
   }
   div[data-list="sailor"] .sailor span.birthdate {
-    display: block;
+    display: flex;
   }
   .data-table.tbl-sailor > .tr > .birthdate {
-    display: block;
+    display: flex;
   }
-  .field-group label {
-    flex-basis: 10%;
+  .data-table.tbl-club > .tr > .address {
+    display: flex;
+  }
+  .data-table.tbl-regatta > .tr > .enddate {
+    display: flex;
+  }
+  .data-table.tbl-regatta > .tr > .clubname {
+    direction: ltr;
+  }
+  [data-role="form-container"] .field-group label {
+    flex-basis: 120px;
   }
 }
 
