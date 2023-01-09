@@ -1344,7 +1344,17 @@ window.addEventListener('beforeinstallprompt', (e) => {
   
   // Optionally, send analytics event that PWA install promo was shown.
   console.log(`'beforeinstallprompt' event was fired.`);
-  pop.confirm("Install PWA", "Do you want add a Home shortcut?", ()=> deferredPrompt.prompt());
+  pop.confirm("Install PWA", "Do you want add a Home shortcut?", function(){
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then((choiceResult) => {
+      if (choiceResult.outcome === 'accepted') {
+        console.log('User accepted the A2HS prompt');
+      } else {
+        console.log('User dismissed the A2HS prompt');
+      }
+      deferredPrompt = null;
+    });
+  });
 });
 
 
