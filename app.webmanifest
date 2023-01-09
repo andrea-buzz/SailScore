@@ -1,6 +1,8 @@
 {
   "name": "Sail Score",
   "id": "SailScore",
+  "start_url": "https://andrea-buzz.github.io/SailScore/",
+  "prefer_related_applications": false,
   "display":  "standalone",
   "orientation":  "portrait",
   "offline_enabled": true,
