@@ -1331,33 +1331,43 @@ function show_started_competitors(){
 show_started_competitors();
 
 /* INSTALL WEB APP */
-let btnAdd = document.querySelector('#btn_install');
-let deferredPrompt;
+let buttonInstall = document.querySelector('#btn_install');
+// Initialize deferredPrompt for use later to show browser install prompt.
+var deferredPrompt;
 
+const hideInstallPromotion = () => buttonInstall.style.display = 'none';
+const showInstallPromotion = () => buttonInstall.style.display = 'block';
 window.addEventListener('beforeinstallprompt', (e) => {
-  // Prevent Chrome 67 and earlier from automatically showing the prompt
+  // Prevent the mini-infobar from appearing on mobile
   e.preventDefault();
   // Stash the event so it can be triggered later.
   deferredPrompt = e;
-  // Update UI notify the user they can add to home screen
-  btnAdd.style.display = 'block';
+  // Update UI notify the user they can install the PWA
+  showInstallPromotion();
+  // Optionally, send analytics event that PWA install promo was shown.
+  console.log(`'beforeinstallprompt' event was fired.`);
 });
 
-btnAdd.addEventListener('click', (e) => {
-  // hide our user interface that shows our A2HS button
-  btnAdd.style.display = 'none';
-  // Show the prompt
+buttonInstall.addEventListener('click', async () => {
+  // Hide the app provided install promotion
+  hideInstallPromotion();
+  // Show the install prompt
   deferredPrompt.prompt();
   // Wait for the user to respond to the prompt
-  deferredPrompt.userChoice
-    .then((choiceResult) => {
-      if (choiceResult.outcome === 'accepted') {
-        console.log('User accepted the A2HS prompt');
-      } else {
-        console.log('User dismissed the A2HS prompt');
-      }
-      deferredPrompt = null;
-    });
+  const { outcome } = await deferredPrompt.userChoice;
+  // Optionally, send analytics event with outcome of user choice
+  console.log(`User response to the install prompt: ${outcome}`);
+  // We've used the prompt, and can't use it again, throw it away
+  deferredPrompt = null;
+});
+
+window.addEventListener('appinstalled', () => {
+  // Hide the app-provided install promotion
+  hideInstallPromotion();
+  // Clear the deferredPrompt so it can be garbage collected
+  deferredPrompt = null;
+  // Optionally, send analytics event to indicate successful install
+  console.log('PWA was installed');
 });
 
 /* WORKER */
