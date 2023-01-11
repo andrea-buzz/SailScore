@@ -326,36 +326,27 @@ class Competitor extends entity {
   constructor(c = {regatta_id: 0, helm_id: 0, crew_ids:[], boat_id:null, sailNumber:'', id: null}) {
     super(c);
     //this.defineProperty = {_data: {value: {}, writable: true, enumerable: true, configurable: true}};
-    let private_data = '#data';
-    this[private_data] = {};
     this.regatta_id = c.regatta_id;
     this.helm_id = c.helm_id;
     this.crew_ids = c.crew_ids;
     this.sailNumber = stripHtml(c.sailNumber);
-    this.helm = {};
-    this.crew = [];
+    this.Helm = c.helm;
+    this.Crew = c.crew || [];
     
   }
-  set _data(o){
-    let n = o;
-  }
-  get _data(){
-    const d = Object.assign({}, this['#data']);
-    return d;
-  }
-  set helm(o){
-    this['#data'].helm = (o instanceof Sailor)?o:new Sailor(o);
+  set Helm(o){
+    this.helm = (o instanceof Sailor)?o:new Sailor(o);
     this.helm_id = this.helm.id; 
   }
-  get helm(){
-    return this['#data'].helm;
+  get Helm(){
+    return this.helm;
   }
-  set crew(o){
-    this['#data'].crew = o.map( (s) => (s instanceof Sailor)?s:new Sailor(s) );
+  set Crew(o){
+    this.crew = o.map( (s) => (s instanceof Sailor)?s:new Sailor(s) );
     this.crew_ids = this.crew.map((s) => s.id);
   }
-  get crew(){
-    return this['#data'].crew;
+  get Crew(){
+    return this.crew;
   }
 }
 
@@ -533,7 +524,7 @@ class CompetitorSingleton{
   }
   getAll(fn = null){
     const onsuccess = (e) => {
-      sailScoreDB.boatclass = e.target.result.map((b) => new Competitor(b));
+      sailScoreDB.competitor = e.target.result.map((b) => new Competitor(b));
       console.log("Competitor recuperati con successo.");
       if(fn){
         fn(e);
@@ -615,12 +606,11 @@ class SailorSingleton {
   
   getAll(fn = null){
     const onsuccess = (e) => {
-      sailScoreDB.boatclass = e.target.result.map((b) => new BoatClass(b));
+      sailScoreDB.sailor = e.target.result.map((b) => new Sailor(b));
       console.log("Sailors recuperati con successo.");
       if(fn){
         fn(e);
       }
-      sailScoreDB.sailor = e.target.result.map((b) => new Sailor(b));
     };
     sailScoreDB.getAllIDBObject(this.osName(), onsuccess);
   }
@@ -735,6 +725,36 @@ function exportAllData() {
 function importAllData(){
   pop.notify('Import all data', 'Sorry, not implemented yet!');
 }
+
+/* FRONT END CLASSES */
+class MultiChoice{
+  constructor(tag, values, availables){
+    this.Tag = tag;
+    this.Values = values;
+    this.Availables = availables;
+    this.createList();
+    this.populateList();
+  }
+  set Tag(s){
+    this.tag = (s instanceof HTMLInputElement)? s: null;
+  }
+  set Values(a){
+    this.values = a;
+  }
+  set Availables(a){
+    this.availables = a;
+  }
+  createList(){
+    let ul = document.createElement('ul');
+    ul.classList.add('avail');
+    this.ula = ul;
+    this.tag.after(ul);
+  }
+  populateList(){
+    this.availables.forEach((c)=> this.ula.insertAdjacentHTML('beforeEnd', `<li data-id='${c.id}'><i>${c.helm.fullName}</i> <strong>${c.sailNumber}</strong></li>`))
+  }
+}
+
 
 /* FRONT END FUNCTIONS */
 
@@ -1113,7 +1133,7 @@ function add_regatta(e) {
         <label>Club</label> <div class="form-control"><input type="text" name="club" value="" /></div>
       </div>
       <div class="field-group">
-        <label>Competitors</label> <div class="form-control"><button type="button" name="competitors">Add competitor</button></div>
+        <label>Competitors</label> <div class="form-control"><input class="multichoice" type="text" name="competitors"/></div>
       </div>
       <div class="form-buttons">
         <input type="hidden" name="id" />
@@ -1121,31 +1141,21 @@ function add_regatta(e) {
       </div>
     </form>`;
   //  addToPopup(title, form);
-  document.querySelector('[data-block="regatta"] [data-role="form-container"]').insertAdjacentHTML('beforeEnd', form);
-  document.querySelectorAll('[data-role="form-container"] button[type="reset"]').forEach( (b)=>
-          b.addEventListener('click', (e) => 
-          e.currentTarget.parentElement.parentElement.remove()) );
-  document.querySelector('form[data-role="form-regatta"] input[name="club"]')
-      .addEventListener('keyup', function(e){
-          let t = e.currentTarget;
-          let club = new Club( sailScoreDB.cached.club(t.value)[0] );
-          t.dataset.value = JSON.stringify(club);
-          setTimeout(() => t.value = club.name, 1000);
-          console.log(club);
-      }, { passive: false });
-      /*
-  document.querySelector('form[data-role="form-regatta"] input[name="competitor"]')
-      .addEventListener('keyup', function(e){
-          let t = e.currentTarget;
-          let sailor = new Sailor( sailScoreDB.cached.sailor(t.value)[0] );
-          t.dataset.value = JSON.stringify(club);
-          setTimeout(() => t.value = sailor.fulName, 1000);
-          console.log(sailor);
-      }, { passive: false });
-  */
+    const fc = document.querySelector('[data-block="regatta"] [data-role="form-container"]');
+    fc.insertAdjacentHTML('beforeEnd', form);
+    const theForm = fc.querySelector('form:last-child');
+    theForm.regatta = new Regatta(); 
+    theForm.querySelector('button[type="reset"]')
+            .addEventListener('click', (e) => theForm.remove());
+    const tcmp = theForm.querySelector('input[name="competitors"]');
+    const mc = new MultiChoice(tcmp, theForm.regatta.competitors, sailScoreDB._cached.competitor);
+     
+     
+     
+     
   document.querySelector('[data-role="save_regatta"]').addEventListener('click', save_regatta);
 }
-
+competitorSingleton.getAll();
 function edit_regatta(e) {
   regattaSingleton.get(Number(e.currentTarget.getAttribute('data-id')), function(ev){
     const title = 'Edit Regatta';
@@ -1223,6 +1233,58 @@ function save_regatta(e){
   //removeFromPopup();
   document.querySelector('[data-role="form-regatta"]').remove();
   //document.querySelector('[data-block="regatta"] [data-role="form-container"]').innerHTML = '';
+}
+
+/* competitor */
+function showCompetitor(){
+  
+}
+document.querySelector('[data-role="add_competitor"]').addEventListener('click', add_competitor);
+
+function add_competitor(e) {
+  const title = 'Add Competitor';
+  const form = `<form data-role="form-competitor">
+      <div class="field-group">
+        <label>Helm</label> <div class="form-control"><select name="helm"></select></div>
+      </div>
+      <div class="field-group">
+        <label>Sail Number</label> <div class="form-control"><input type="text" name="sailNumber" /></div>
+      </div>
+      <div class="field-group">
+        <label>Boat Class</label> <div class="form-control"><select name="boatClass"></select></div>
+      </div>
+      <div class="form-buttons">
+        <input type="hidden" name="id" />
+        <button type="reset">Reset</button> <button type="button" data-role="save_competitor">Save</button>
+      </div>
+    </form>`;
+  addToPopup(title, form);
+  
+  const theForm = document.querySelector('.popup-fixed form');
+  theForm.competitor = new Competitor();
+  theForm.competitor.boatclass = sailScoreDB._cached.boatclass.find((b) => b.name === 'ILCA 6');
+  
+  const sel_helm = theForm.querySelector('select[name="helm"]');
+  
+  sel_helm.innerHTML = sailScoreDB._cached.sailor.map((s) => `<option value="${s.id}">${s.fullName}</option>` ).join('\n');
+  
+  sel_helm.addEventListener('click', (e) => { 
+        theForm.competitor.helm = sailScoreDB._cached.sailor.find((s) => s.id === parseInt(e.currentTarget.selectedOptions[0].value ));});
+  const sel_boat = theForm.querySelector('select[name="boatClass"]');
+  sel_boat.innerHTML = sailScoreDB._cached.boatclass.map((s) => `<option value="${s.id}">${s.name}</option>` ).join('\n');
+  sel_boat.addEventListener('click', (e) => { 
+        theForm.competitor.boatclass = sailScoreDB._cached.boatclass.find((s) => s.id === parseInt(e.currentTarget.selectedOptions[0].value ));});
+  theForm.querySelector('[name="sailNumber"]').addEventListener('change', (e) => theForm.competitor.sailNumber = e.currentTarget.value);
+  theForm.querySelector('[data-role="save_competitor"]').addEventListener('click', save_competitor);
+}
+
+
+
+function save_competitor(e){
+  const theForm = e.currentTarget.parentElement.parentElement;
+  competitorSingleton.save(theForm.competitor);
+  competitorSingleton.getAll(showCompetitor);
+  removeFromPopup();
 }
 
 /* POP */
