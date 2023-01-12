@@ -1,6 +1,8 @@
 const cacheName = "SailScore-v1";
 const appShellFiles = [
   "./android-icon-48x48.png",
+  "./android-icon-512x512.png",
+  "./android-icon-512x512.svg",
   "./app.webmanifest",
   "./favicon.ico",
   "./index.html",

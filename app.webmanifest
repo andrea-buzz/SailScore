@@ -7,7 +7,7 @@
   "orientation":  "portrait",
   "offline_enabled": true,
   "background_color": "#ffffff",
-  "theme_color": "#333333",
+  "theme_color": "#fafafa",
   "icons": [
      {  
         "src": "android-icon-48x48.png",
