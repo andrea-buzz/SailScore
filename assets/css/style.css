@@ -254,7 +254,7 @@ div[data-list="sailor"] .sailor span.actions {
 .field-group input, .field-group select {
   font-size: 1.1rem;
   width: 100%;
-  height: 100%;
+  min-height: 22px;
   display: block;
 }
 .field-group input[type="date"] {
@@ -262,6 +262,21 @@ div[data-list="sailor"] .sailor span.actions {
 }
 .field-group input[type="radio"], .field-group input[type="checkbox"]{
   width: fit-content;
+}
+.field-group .multichoice {
+  
+}
+.field-group ul.avail {
+  list-style:none;
+  margin: 10px 0;
+  padding: 0;
+  width: 100%;
+  border: 1px solid #333;
+  max-height: 40vh;
+  overflow-y: auto;
+}
+.field-group ul.avail > li {
+  padding: 4px;
 }
 .form-buttons {
   display: flex;

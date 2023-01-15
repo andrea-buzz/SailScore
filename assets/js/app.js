@@ -368,7 +368,11 @@ class Regatta extends entity{
     this.endDate = b.enddate?b.enddate:0;
     this.UsePY = b.usePY;
     this.Club = b.club;
+    this.maxraces = b.maxraces;
+    this.DiscardPattern = b.discardpattern;
     this.competitors = b.competitors?b.competitors:[];
+    this.races = b.races?b.races:[];
+    this.results = b.results?b.results:[];
   }
   get startDate(){
     return ( 0 === this.startdate)?'':new Date( this.startdate ).toLocaleDateString();
@@ -409,6 +413,20 @@ class Regatta extends entity{
     }else{
       this.usePY = Boolean(o === true);
     }
+  }
+  set MaxRaces(o){
+    !isNaN(o)?Number(o):2;
+  }
+  set DiscardPattern(o){
+    let d = [];
+    if ('string' === typeof o){
+       d = o.split(/\D/).map((i) => parseInt(i));
+    }else if('undefined' === typeof o ){
+      
+    }else{
+      d = o.length?o.map((i) => parseInt(i)):[];
+    }
+    this.discardpattern = d;
   }
 }
 
@@ -1130,8 +1148,14 @@ function add_regatta(e) {
         <label>Use PY</label> <div class="form-control"><input type="checkbox" name="usePY" value="false" onclick="this.value=this.checked" /></div>
       </div>
       <div class="field-group">
-        <label>Club</label> <div class="form-control"><input type="text" name="club" value="" /></div>
+        <label>Club</label> <div class="form-control"><select name="club"></select></div>
       </div>
+      <div class="field-group">
+        <label>Max Races</label> <div class="form-control"><input type="number" name="maxraces" min="1" max="99" value="2" /></div>
+      </div>  
+      <div class="field-group">
+        <label>Discard Pattern</label> <div class="form-control"><input type="text" name="discardpattern" value="0 0 0 1 1 1 2 2 2 3 3 3 4 4 4" /></div>
+      </div>  
       <div class="field-group">
         <label>Competitors</label> <div class="form-control"><input class="multichoice" type="text" name="competitors"/></div>
       </div>
@@ -1147,9 +1171,16 @@ function add_regatta(e) {
     theForm.regatta = new Regatta(); 
     theForm.querySelector('button[type="reset"]')
             .addEventListener('click', (e) => theForm.remove());
+    const tag_club = document.querySelector('form[data-role="form-regatta"] select[name="club"]');
+    tag_club.innerHTML = sailScoreDB._cached.club.map((s) => `<option value="${s.id}">${s.name}</option>` ).join('');
+    tag_club.addEventListener('input', function(e){
+          let t = e.currentTarget;
+          let club = sailScoreDB._cached.club.find((c) => c.id === parseInt(t.value));
+          t.dataset.value = JSON.stringify(club);
+      }, { passive: true }); 
     const tcmp = theForm.querySelector('input[name="competitors"]');
     const mc = new MultiChoice(tcmp, theForm.regatta.competitors, sailScoreDB._cached.competitor);
-     
+    
      
      
      
@@ -1176,8 +1207,14 @@ function edit_regatta(e) {
         <label>Use PY</label> <div class="form-control"><input type="checkbox" name="usePY" ${usePYchecked} value="${UsePY}" onclick="this.value=this.checked" /></div>
       </div>
       <div class="field-group">
-        <label>Club</label> <div class="form-control"><input type="text" name="club" value="${s.clubName}" /></div>
+        <label>Club</label> <div class="form-control"><select name="club"></select></div>
       </div>
+      <div class="field-group">
+        <label>Max Races</label> <div class="form-control"><input type="number" name="maxraces" min="1" max="99" value="${s.maxraces}" /></div>
+      </div> 
+      <div class="field-group">
+        <label>Discard Pattern</label> <div class="form-control"><input type="text" name="discardpattern" value="${s.discardpattern.join(' ')}" /></div>
+      </div>  
       <div class="field-group">
         <label>Competitors</label> <div class="form-control"><button type="button" name="competitors">Add competitor</button></div>
       </div>
@@ -1192,14 +1229,14 @@ function edit_regatta(e) {
             b.addEventListener('click', (e) => 
             e.currentTarget.parentElement.parentElement.remove()) );
     document.querySelector('[data-role="save_regatta"]').addEventListener('click', save_regatta);
-    document.querySelector('form[data-role="form-regatta"] input[name="club"]').dataset.value = JSON.stringify(s.Club);
-    document.querySelector('form[data-role="form-regatta"] input[name="club"]')
-      .addEventListener('keyup', function(e){
+    const tag_club = document.querySelector('form[data-role="form-regatta"] select[name="club"]');
+    tag_club.dataset.value = JSON.stringify(s.Club);
+    tag_club.innerHTML = sailScoreDB._cached.club.map((s) => `<option value="${s.id}">${s.name}</option>` ).join('');
+    tag_club.value = s.Club.id;
+    tag_club.addEventListener('input', function(e){
           let t = e.currentTarget;
-          let club = new Club( sailScoreDB.cached.club(t.value)[0] );
+          let club = sailScoreDB._cached.club.find((c) => c.id === parseInt(t.value));
           t.dataset.value = JSON.stringify(club);
-          setTimeout(() => t.value = club.name, 1000);
-          console.log(club);
       }, { passive: true });
     document.querySelector('form[data-role="form-regatta"] button[name="competitors"]').dataset = {value: JSON.stringify(s.competitors)};
     
@@ -1259,21 +1296,28 @@ function add_competitor(e) {
       </div>
     </form>`;
   addToPopup(title, form);
+  let ei = new Event('input', {
+        bubbles: true,
+        cancelable: true
+    });
   
+
   const theForm = document.querySelector('.popup-fixed form');
   theForm.competitor = new Competitor();
-  theForm.competitor.boatclass = sailScoreDB._cached.boatclass.find((b) => b.name === 'ILCA 6');
+  //theForm.competitor.boatclass = sailScoreDB._cached.boatclass.find((b) => b.name === 'ILCA 6');
   
   const sel_helm = theForm.querySelector('select[name="helm"]');
   
   sel_helm.innerHTML = sailScoreDB._cached.sailor.map((s) => `<option value="${s.id}">${s.fullName}</option>` ).join('\n');
   
-  sel_helm.addEventListener('click', (e) => { 
-        theForm.competitor.helm = sailScoreDB._cached.sailor.find((s) => s.id === parseInt(e.currentTarget.selectedOptions[0].value ));});
+  sel_helm.addEventListener('input', (e) => { 
+        theForm.competitor.Helm = sailScoreDB._cached.sailor.find((s) => s.id === parseInt(e.currentTarget.selectedOptions[0].value ));});
+  sel_helm.dispatchEvent(ei);
   const sel_boat = theForm.querySelector('select[name="boatClass"]');
   sel_boat.innerHTML = sailScoreDB._cached.boatclass.map((s) => `<option value="${s.id}">${s.name}</option>` ).join('\n');
-  sel_boat.addEventListener('click', (e) => { 
+  sel_boat.addEventListener('input', (e) => { 
         theForm.competitor.boatclass = sailScoreDB._cached.boatclass.find((s) => s.id === parseInt(e.currentTarget.selectedOptions[0].value ));});
+      sel_boat.dispatchEvent(ei);
   theForm.querySelector('[name="sailNumber"]').addEventListener('change', (e) => theForm.competitor.sailNumber = e.currentTarget.value);
   theForm.querySelector('[data-role="save_competitor"]').addEventListener('click', save_competitor);
 }
