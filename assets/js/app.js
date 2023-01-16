@@ -332,6 +332,7 @@ class Competitor extends entity {
     this.sailNumber = stripHtml(c.sailNumber);
     this.Helm = c.helm;
     this.Crew = c.crew || [];
+    this.boatclass = c.boatclass;
     
   }
   set Helm(o){
@@ -763,14 +764,47 @@ class MultiChoice{
     this.availables = a;
   }
   createList(){
-    let ul = document.createElement('ul');
-    ul.classList.add('avail');
-    this.ula = ul;
-    this.tag.after(ul);
+    let ula = document.createElement('ul');
+    ula.classList.add('avail');
+    this.ula = ula;
+    this.tag.after(ula);
+    let uli = document.createElement('ul');
+    uli.classList.add('included');
+    this.uli = uli;
+    this.tag.after(uli);
+    this.tag.addEventListener('keyup', (c) => this.filter(c.currentTarget.value.toLowerCase()) );
   }
   populateList(){
-    this.availables.forEach((c)=> this.ula.insertAdjacentHTML('beforeEnd', `<li data-id='${c.id}'><i>${c.helm.fullName}</i> <strong>${c.sailNumber}</strong></li>`))
+    this.availables.forEach((c)=> this.ula.insertAdjacentHTML('beforeEnd', `<li data-id="${c.id}" title="${c.boatclass.name}"><i>${c.helm.fullName}</i> <strong>${c.sailNumber}</strong></li>`));
+    this.ula.querySelectorAll('li').forEach((l) => l.addEventListener('click', (e) => {
+      const nd = e.currentTarget;
+      if(false === nd.classList.contains('disabled')){
+        const nc = nd.cloneNode(true);
+        nc.addEventListener('click', (n) => { 
+          n.currentTarget.remove(); 
+          nd.classList.remove('disabled'); 
+          this.setDataset(); 
+          this.removeFilter(); 
+        });
+        this.uli.append(nc);
+        this.setDataset();
+        
+        nd.classList.add('disabled');
+      }
+      this.removeFilter();
+    }));
   }
+  filter (t){
+    this.ula.childNodes.forEach((l) => l.style.display = l.innerText.toLowerCase().includes(t)?'':'none');
+  }
+  removeFilter() {
+    this.ula.childNodes.forEach((l) => l.style.display = this.tag.value = ''); 
+  }
+  setDataset() { 
+    this.included = [...this.uli.querySelectorAll('.included > li')]
+    .map((l) => this.availables.find( (i) => i.id === parseInt(l.dataset.id) ) ); 
+    this.tag.dataset.value=JSON.stringify(this.included);
+  };
 }
 
 

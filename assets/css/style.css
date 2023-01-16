@@ -266,17 +266,54 @@ div[data-list="sailor"] .sailor span.actions {
 .field-group .multichoice {
   
 }
-.field-group ul.avail {
+.field-group ul.avail, .field-group ul.included {
+  display: flex;
+  flex-direction: column;
   list-style:none;
-  margin: 10px 0;
-  padding: 0;
+  margin: 2px 0;
+  padding: 3px;
   width: 100%;
-  border: 1px solid #333;
-  max-height: 40vh;
+  border: 1px solid #777;
+  min-height: 24px;
+  max-height: 33vh;
   overflow-y: auto;
 }
 .field-group ul.avail > li {
-  padding: 4px;
+  list-style:none;
+  padding: 4px 8px;
+  margin:0 0 6px 0;
+  display: flex;
+  justify-content: space-between;
+}
+.field-group .avail > li {
+  cursor: zoom-in;
+}
+.field-group .avail > li.disabled {
+  cursor:no-drop;
+  color:#999;
+  order:2;
+}
+.field-group ul.included {
+  padding: 3px;
+  background-color: #f0f0f0;
+}
+.field-group .included > li {
+  list-style:none;
+  padding: 4px 20px 4px 8px;
+  margin:0 0 6px 0;
+  display: flex;
+  justify-content: space-between;
+  border:1px solid #aaa;
+  border-radius:12px;
+  position:relative;
+  cursor: zoom-out;
+  background-color: #fff;
+}
+.field-group .included > li:after {
+  content:'x';
+  position:absolute;
+  right: 8px;
+  cursor: zoom-out;
 }
 .form-buttons {
   display: flex;
