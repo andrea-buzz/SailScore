@@ -371,7 +371,7 @@ class Regatta extends entity{
     this.Club = b.club;
     this.maxraces = b.maxraces;
     this.DiscardPattern = b.discardpattern;
-    this.competitors = b.competitors?b.competitors:[];
+    this.Competitors = b.competitors?b.competitors:[];
     this.races = b.races?b.races:[];
     this.results = b.results?b.results:[];
   }
@@ -407,6 +407,26 @@ class Regatta extends entity{
   }
   get clubName() {
     return ('string' === typeof this.club)? this.club: this.Club.name;
+  }
+  set Competitors(c) {
+    let o = [];
+    
+    try{
+      if(Array.isArray(c)){
+        o = c.map((i)=> i instanceof Competitor?i: new Competitor(i));
+      }else{
+        o = ('string' === typeof c)? JSON.parse(c): c;  
+      }
+    }
+    catch(e){
+      console.log(e);
+    }
+    finally{
+      this.competitors = o;
+    }
+  }
+  get Competitors() {
+    return this.competitors;
   }
   set UsePY(o){
     if ('string' === typeof o){
@@ -751,8 +771,12 @@ class MultiChoice{
     this.Tag = tag;
     this.Values = values;
     this.Availables = availables;
+    this.Template = '<li data-id="${c.id}" title="${c.boatclass.name}"><i>${c.helm.fullName}</i> <strong>${c.sailNumber}</strong></li>';
     this.createList();
     this.populateList();
+  }
+  renderTemplate (c){
+    return Function( 'c', 'return `' + this.Template + '`;' )(c);
   }
   set Tag(s){
     this.tag = (s instanceof HTMLInputElement)? s: null;
@@ -775,7 +799,10 @@ class MultiChoice{
     this.tag.addEventListener('keyup', (c) => this.filter(c.currentTarget.value.toLowerCase()) );
   }
   populateList(){
-    this.availables.forEach((c)=> this.ula.insertAdjacentHTML('beforeEnd', `<li data-id="${c.id}" title="${c.boatclass.name}"><i>${c.helm.fullName}</i> <strong>${c.sailNumber}</strong></li>`));
+    const c96 = String.fromCharCode(96);
+    const T = this.Template;
+    
+    this.availables.forEach((c) => this.ula.insertAdjacentHTML('beforeEnd', this.renderTemplate(c)  )); //  '`' + tmpl + '`'
     this.ula.querySelectorAll('li').forEach((l) => l.addEventListener('click', (e) => {
       const nd = e.currentTarget;
       if(false === nd.classList.contains('disabled')){
@@ -793,6 +820,16 @@ class MultiChoice{
       }
       this.removeFilter();
     }));
+    this.values.forEach((c)=> {
+      this.uli.insertAdjacentHTML('beforeEnd', this.renderTemplate(c) );
+      this.ula.querySelector(`[data-id="${c.id}"]`).classList.add('disabled');
+      });
+    this.uli.querySelectorAll('li').forEach((l) => l.addEventListener('click',(e) => {
+        const t = e.currentTarget;
+        const id = t.dataset.id;
+        t.remove();
+        this.ula.querySelector(`[data-id="${id}"].disabled`).classList.remove('disabled');
+      }));
   }
   filter (t){
     this.ula.childNodes.forEach((l) => l.style.display = l.innerText.toLowerCase().includes(t)?'':'none');
@@ -809,6 +846,11 @@ class MultiChoice{
 
 
 /* FRONT END FUNCTIONS */
+
+const event_input = new Event('input', {
+        bubbles: true,
+        cancelable: true
+    });
 
 function downloadString(text, fileType, fileName) {
   var blob = new Blob([text], { type: fileType });
@@ -1166,8 +1208,6 @@ document.querySelector('[data-role="add_regatta"]').addEventListener('click', ad
 
 function add_regatta(e) {
   const title = 'Add Regatta';
-  let club = JSON.stringify( new Club({name:'Circolo Velico Ardizio'} ));
-  
   const form = `<form data-role="form-regatta">
       <div class="field-group">
         <label>Name</label> <div class="form-control"><input type="text" name="name" /></div>
@@ -1202,7 +1242,7 @@ function add_regatta(e) {
     const fc = document.querySelector('[data-block="regatta"] [data-role="form-container"]');
     fc.insertAdjacentHTML('beforeEnd', form);
     const theForm = fc.querySelector('form:last-child');
-    theForm.regatta = new Regatta(); 
+    theForm.regatta = new Regatta();
     theForm.querySelector('button[type="reset"]')
             .addEventListener('click', (e) => theForm.remove());
     const tag_club = document.querySelector('form[data-role="form-regatta"] select[name="club"]');
@@ -1211,7 +1251,8 @@ function add_regatta(e) {
           let t = e.currentTarget;
           let club = sailScoreDB._cached.club.find((c) => c.id === parseInt(t.value));
           t.dataset.value = JSON.stringify(club);
-      }, { passive: true }); 
+      }, { passive: true });
+    tag_club.dispatchEvent(event_input);
     const tcmp = theForm.querySelector('input[name="competitors"]');
     const mc = new MultiChoice(tcmp, theForm.regatta.competitors, sailScoreDB._cached.competitor);
     
@@ -1224,7 +1265,7 @@ competitorSingleton.getAll();
 function edit_regatta(e) {
   regattaSingleton.get(Number(e.currentTarget.getAttribute('data-id')), function(ev){
     const title = 'Edit Regatta';
-    let s = new Regatta( ev.currentTarget.result );
+    const s = new Regatta( ev.currentTarget.result );
     let usePYchecked = s.usePY?'checked=="checked"':'';
     let UsePY = s.usePY.toString();
     const form = `<form data-role="form-regatta">
@@ -1250,7 +1291,7 @@ function edit_regatta(e) {
         <label>Discard Pattern</label> <div class="form-control"><input type="text" name="discardpattern" value="${s.discardpattern.join(' ')}" /></div>
       </div>  
       <div class="field-group">
-        <label>Competitors</label> <div class="form-control"><button type="button" name="competitors">Add competitor</button></div>
+        <label>Competitors</label> <div class="form-control"><input class="multichoice" type="text" name="competitors"/></div>
       </div>
       <div class="form-buttons">
         <input type="hidden" name="id" value="${s.id}" />
@@ -1258,11 +1299,13 @@ function edit_regatta(e) {
       </div>
     </form>`;
     //addToPopup(title, form);
-    document.querySelector('[data-block="regatta"] [data-role="form-container"]').insertAdjacentHTML('beforeEnd', form);
-    document.querySelectorAll('[data-role="form-container"] button[type="reset"]').forEach( (b)=>
-            b.addEventListener('click', (e) => 
-            e.currentTarget.parentElement.parentElement.remove()) );
-    document.querySelector('[data-role="save_regatta"]').addEventListener('click', save_regatta);
+    const fc = document.querySelector('[data-block="regatta"] [data-role="form-container"]');
+    fc.insertAdjacentHTML('beforeEnd', form);
+    const theForm = fc.querySelector('form:last-child');
+    theForm.querySelector('button[type="reset"]').addEventListener('click', (e) => 
+            e.currentTarget.parentElement.parentElement.remove());
+    theForm.querySelector('[data-role="save_regatta"]').addEventListener('click', save_regatta);
+    theForm.regatta = s;
     const tag_club = document.querySelector('form[data-role="form-regatta"] select[name="club"]');
     tag_club.dataset.value = JSON.stringify(s.Club);
     tag_club.innerHTML = sailScoreDB._cached.club.map((s) => `<option value="${s.id}">${s.name}</option>` ).join('');
@@ -1272,7 +1315,10 @@ function edit_regatta(e) {
           let club = sailScoreDB._cached.club.find((c) => c.id === parseInt(t.value));
           t.dataset.value = JSON.stringify(club);
       }, { passive: true });
-    document.querySelector('form[data-role="form-regatta"] button[name="competitors"]').dataset = {value: JSON.stringify(s.competitors)};
+    tag_club.dispatchEvent(event_input);
+    const tcmp = theForm.querySelector('input[name="competitors"]');
+    const mc = new MultiChoice(tcmp, theForm.regatta.competitors, sailScoreDB._cached.competitor);
+    theForm.querySelector('input[name="competitors"]').dataset = {value: JSON.stringify(s.competitors)};
     
   });
 }
@@ -1289,15 +1335,22 @@ function delete_regatta(e){
 };
 
 function save_regatta(e){
-  const fields = e.currentTarget.parentElement.parentElement.querySelectorAll('input[name]');
-  const f_club = e.currentTarget.parentElement.parentElement.querySelector('[name="club"]');
+  const theForm = e.currentTarget.parentElement.parentElement;
+  const fields = theForm.querySelectorAll('input[name]');
+  const f_club = theForm.querySelector('[name="club"]');
+  const f_competitors = theForm.querySelector('[name="competitors"]');
+  const regatta = theForm.regatta;
   const ff = [...fields].map(f => ({name: f.name, value: f.value}));
-  const regatta = new Regatta();
+  
   regatta._setFromArray = ff;
   regatta.UsePY = regatta.usePY;
   if(f_club.dataset.value){
     const c = JSON.parse(f_club.dataset.value);
     regatta.Club = c;
+  }
+  if(f_competitors.dataset.value){
+    const c = JSON.parse(f_competitors.dataset.value);
+    regatta.Competitors = c;
   }
   regattaSingleton.save(regatta);
   regattaSingleton.getAll(showRegatta);
@@ -1330,10 +1383,7 @@ function add_competitor(e) {
       </div>
     </form>`;
   addToPopup(title, form);
-  let ei = new Event('input', {
-        bubbles: true,
-        cancelable: true
-    });
+  
   
 
   const theForm = document.querySelector('.popup-fixed form');
@@ -1346,12 +1396,12 @@ function add_competitor(e) {
   
   sel_helm.addEventListener('input', (e) => { 
         theForm.competitor.Helm = sailScoreDB._cached.sailor.find((s) => s.id === parseInt(e.currentTarget.selectedOptions[0].value ));});
-  sel_helm.dispatchEvent(ei);
+  sel_helm.dispatchEvent(event_input);
   const sel_boat = theForm.querySelector('select[name="boatClass"]');
   sel_boat.innerHTML = sailScoreDB._cached.boatclass.map((s) => `<option value="${s.id}">${s.name}</option>` ).join('\n');
   sel_boat.addEventListener('input', (e) => { 
         theForm.competitor.boatclass = sailScoreDB._cached.boatclass.find((s) => s.id === parseInt(e.currentTarget.selectedOptions[0].value ));});
-      sel_boat.dispatchEvent(ei);
+  sel_boat.dispatchEvent(event_input);
   theForm.querySelector('[name="sailNumber"]').addEventListener('change', (e) => theForm.competitor.sailNumber = e.currentTarget.value);
   theForm.querySelector('[data-role="save_competitor"]').addEventListener('click', save_competitor);
 }
@@ -1483,8 +1533,7 @@ window.addEventListener('beforeinstallprompt', (e) => {
   // Update UI notify the user they can install the PWA
   
   // Optionally, send analytics event that PWA install promo was shown.
-  console.log(`'beforeinstallprompt' event was fired.`);
-  pop.confirm("Install PWA", "Do you want add a Home shortcut?", function(){
+  const callback = function(){
     deferredPrompt.prompt();
     deferredPrompt.userChoice.then((choiceResult) => {
       if (choiceResult.outcome === 'accepted') {
@@ -1494,7 +1543,16 @@ window.addEventListener('beforeinstallprompt', (e) => {
       }
       deferredPrompt = null;
     });
-  });
+  };
+  const tag_inc = document.querySelector('.install-container');
+  const b = document.createElement('button');
+  b.innerText = 'Install offline version';
+  b.classList.add('btn');
+  b.type = 'button';
+  tag_inc.appendChild(b);
+  b.addEventListener('click', callback);
+  console.log(`'beforeinstallprompt' event was fired.`);
+  //pop.confirm("Install PWA", "Do you want add a Home shortcut?", callback);
 });
 
 
