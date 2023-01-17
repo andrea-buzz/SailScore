@@ -767,16 +767,19 @@ function importAllData(){
 
 /* FRONT END CLASSES */
 class MultiChoice{
-  constructor(tag, values, availables){
+  constructor(tag, values, availables, template){
     this.Tag = tag;
     this.Values = values;
     this.Availables = availables;
-    this.Template = '<li data-id="${c.id}" title="${c.boatclass.name}"><i>${c.helm.fullName}</i> <strong>${c.sailNumber}</strong></li>';
+    this.Template = template?template:'<li data-id="${c.id}" title="${c.boatclass.name}"><i>${c.helm.fullName}</i> <strong>${c.sailNumber}</strong></li>';
     this.createList();
     this.populateList();
   }
+  set Template(c){
+    this.template = c;
+  }
   renderTemplate (c){
-    return Function( 'c', 'return `' + this.Template + '`;' )(c);
+    return Function( 'c', 'return `' + this.template + '`;' )(c);
   }
   set Tag(s){
     this.tag = (s instanceof HTMLInputElement)? s: null;
@@ -788,15 +791,20 @@ class MultiChoice{
     this.availables = a;
   }
   createList(){
-    let ula = document.createElement('ul');
+    const wrap = document.createElement('div');
+    wrap.classList.add('wrap-multichoice');
+    const ula = document.createElement('ul');
     ula.classList.add('avail');
     this.ula = ula;
-    this.tag.after(ula);
-    let uli = document.createElement('ul');
+    
+    const uli = document.createElement('ul');
     uli.classList.add('included');
     this.uli = uli;
-    this.tag.after(uli);
+    wrap.appendChild(ula);
+    wrap.appendChild(uli);
+    this.tag.after(wrap);
     this.tag.addEventListener('keyup', (c) => this.filter(c.currentTarget.value.toLowerCase()) );
+    
   }
   populateList(){
     const c96 = String.fromCharCode(96);
@@ -1335,7 +1343,7 @@ function delete_regatta(e){
 };
 
 function save_regatta(e){
-  const theForm = e.currentTarget.parentElement.parentElement;
+  const theForm = e.currentTarget.form;
   const fields = theForm.querySelectorAll('input[name]');
   const f_club = theForm.querySelector('[name="club"]');
   const f_competitors = theForm.querySelector('[name="competitors"]');
@@ -1372,6 +1380,9 @@ function add_competitor(e) {
         <label>Helm</label> <div class="form-control"><select name="helm"></select></div>
       </div>
       <div class="field-group">
+        <label>Crew</label> <div class="form-control"><input class="multichoice" type="text" name="crew" /></div>
+      </div>
+      <div class="field-group">
         <label>Sail Number</label> <div class="form-control"><input type="text" name="sailNumber" /></div>
       </div>
       <div class="field-group">
@@ -1391,25 +1402,29 @@ function add_competitor(e) {
   //theForm.competitor.boatclass = sailScoreDB._cached.boatclass.find((b) => b.name === 'ILCA 6');
   
   const sel_helm = theForm.querySelector('select[name="helm"]');
-  
   sel_helm.innerHTML = sailScoreDB._cached.sailor.map((s) => `<option value="${s.id}">${s.fullName}</option>` ).join('\n');
-  
   sel_helm.addEventListener('input', (e) => { 
         theForm.competitor.Helm = sailScoreDB._cached.sailor.find((s) => s.id === parseInt(e.currentTarget.selectedOptions[0].value ));});
   sel_helm.dispatchEvent(event_input);
+  
   const sel_boat = theForm.querySelector('select[name="boatClass"]');
   sel_boat.innerHTML = sailScoreDB._cached.boatclass.map((s) => `<option value="${s.id}">${s.name}</option>` ).join('\n');
   sel_boat.addEventListener('input', (e) => { 
         theForm.competitor.boatclass = sailScoreDB._cached.boatclass.find((s) => s.id === parseInt(e.currentTarget.selectedOptions[0].value ));});
   sel_boat.dispatchEvent(event_input);
+  
   theForm.querySelector('[name="sailNumber"]').addEventListener('change', (e) => theForm.competitor.sailNumber = e.currentTarget.value);
+  
   theForm.querySelector('[data-role="save_competitor"]').addEventListener('click', save_competitor);
+  const tcmp = theForm.querySelector('input[name="crew"]');
+  const template = '<li data-id="${c.id}"><i>${c.fullName}</i> <strong>${c.fiv}</strong></li>';
+  const mc = new MultiChoice(tcmp, theForm.competitor.crew, sailScoreDB._cached.sailor, template);
 }
 
 
 
 function save_competitor(e){
-  const theForm = e.currentTarget.parentElement.parentElement;
+  const theForm = e.currentTarget.form;
   competitorSingleton.save(theForm.competitor);
   competitorSingleton.getAll(showCompetitor);
   removeFromPopup();
