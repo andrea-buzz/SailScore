@@ -1380,7 +1380,7 @@ function add_competitor(e) {
         <label>Helm</label> <div class="form-control"><select name="helm"></select></div>
       </div>
       <div class="field-group">
-        <label>Crew</label> <div class="form-control"><input class="multichoice" type="text" name="crew" /></div>
+        <label>Crew</label> <div class="form-control"><input type="checkbox" class="mc-toggle" /><input class="multichoice mc-collapse" type="text" name="crew" /></div>
       </div>
       <div class="field-group">
         <label>Sail Number</label> <div class="form-control"><input type="text" name="sailNumber" /></div>

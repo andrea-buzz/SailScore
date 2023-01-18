@@ -269,6 +269,7 @@ div[data-list="sailor"] .sailor span.actions {
 .field-group input[type="radio"], .field-group input[type="checkbox"]{
   width: fit-content;
 }
+
 .field-group .wrap-multichoice {
   display: flex;
   flex-direction: column;
@@ -329,6 +330,25 @@ div[data-list="sailor"] .sailor span.actions {
   position:absolute;
   right: 8px;
   cursor: zoom-out;
+}
+.field-group .multichoice.mc-collapse {
+  padding-left: 26px;
+  width: 94%;
+}
+.field-group .multichoice.mc-collapse + .wrap-multichoice {
+  display: none;
+  transition: .1s display 1s;
+}
+.field-group .mc-toggle {
+  transform: translate(4px, 24px);
+  z-index: 1;
+  position: relative;
+}
+.field-group .mc-toggle:checked + .multichoice.mc-collapse + .wrap-multichoice,
+.field-group .mc-toggle + .multichoice.mc-collapse:focus + .wrap-multichoice,
+.field-group .mc-toggle + .multichoice.mc-collapse[data-value^="[{"] + .wrap-multichoice {
+  display: flex;
+  transition: .1s display 1s;
 }
 .form-buttons {
   display: flex;
