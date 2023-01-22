@@ -33,9 +33,10 @@ class SailScoreDB {
       this.createSailorStore(db);
     };
     
-    r.onerror = function(event) {
-      console.log("Error opening database.: " + event.target.errorCode);
+    r.onerror = function(e) {
+      console.log("Error opening database: " + e.target.errorCode);
     };
+    r.onsuccess = (e) => this.objectStoreNames = [...e.target.result.objectStoreNames];
     return r;
   }
   deleteDatabase( force = false){
@@ -104,7 +105,7 @@ class SailScoreDB {
   saveIDBObject(osName, obj, fn = null){
     const r = this.openDB();
     r.onerror = function(e) {
-      console.log("Errore nell'apertura del database: " + e.target.errorCode);
+      console.log("Error opening database: " + e.target.errorCode);
     };
     r.onsuccess = (e)=>{
       const db = e.target.result;
@@ -121,7 +122,7 @@ class SailScoreDB {
   deleteIDBObject(osName, id, fn = null){
     const r = this.openDB();
     r.onerror = function(e) {
-      console.log("Errore nell'apertura del database: " + e.target.errorCode);
+      console.log("Error opening database: " + e.target.errorCode);
     };
     r.onsuccess = (e)=>{
       const db = e.target.result;
@@ -138,7 +139,7 @@ class SailScoreDB {
   getIDBObject(osName, id, fn = null){
     const r = this.openDB();
     r.onerror = function(e) {
-      console.log("Errore nell'apertura del database: " + e.target.errorCode);
+      console.log("Error opening database: " + e.target.errorCode);
     };
     r.onsuccess = (e)=>{
       const db = e.target.result;
@@ -155,7 +156,7 @@ class SailScoreDB {
   getAllIDBObject(osName, fn = null){
     const r = this.openDB();
     r.onerror = function(e) {
-      console.log("Errore nell'apertura del database: " + e.target.errorCode);
+      console.log("Error opening database: " + e.target.errorCode);
     };
     r.onsuccess = (e)=>{
       const db = e.target.result;
@@ -252,7 +253,7 @@ class SailScoreDB {
   }
 }
 const sailScoreDB = new SailScoreDB(); 
-sailScoreDB.eventList.forEach((i) => document.addEventListener(i, (e) => console.log(e.type + ' fired')));
+//sailScoreDB.eventList.forEach((i) => document.addEventListener(i, (e) => console.log(e.type + ' fired')));
 
 /* ENTITIES */
 class entity {
@@ -395,7 +396,7 @@ class Regatta extends entity{
       o = ('string' === typeof c)? JSON.parse(c): c;
     }
     catch(e){
-      console.log(e);
+      console.log(e.message);
       o.name = c;
     }
     finally{
@@ -419,7 +420,7 @@ class Regatta extends entity{
       }
     }
     catch(e){
-      console.log(e);
+      console.log(e.message);
     }
     finally{
       this.competitors = o;
@@ -735,7 +736,7 @@ function exportAllData() {
   function getTable(tname){
     const r2 = sailScoreDB.openDB();
     r2.onerror = function(e1) {
-      console.log("Errore nell'apertura del database: " + e1.target.errorCode);
+      console.log("Error opening database: " + e1.target.errorCode);
     };
     r2.onsuccess = (e2) => {
       const db = e2.target.result;
@@ -755,14 +756,42 @@ function exportAllData() {
     }
   }
   function exportAsJSON(){
-    const j = JSON.stringify([data]);
+    const j = JSON.stringify(data);
     downloadString(j, 'json', 'SailScoreAllData.json');
   }
   return this;
 }
 
 function importAllData(){
-  pop.notify('Import all data', 'Sorry, not implemented yet!');
+  const fs = document.createElement('input');
+  let data = {};
+  fs.type = "file";
+  fs.addEventListener('change', readFile);
+  fs.click();
+  function readFile(e){
+    const mf = e.currentTarget.files[0];
+    const r = new FileReader();
+    r.addEventListener("load", loadJSON);
+    r.readAsBinaryString(mf);
+  }
+  function loadJSON(e){
+    let fc;
+    try{
+      fc = e.target.result;
+      data = JSON.parse(fc);
+      importData(data);
+      console.log(data);
+    }
+    catch(e) {
+      pop.alert("Import data Error", e.message);
+    }
+  }
+  function importData(d){
+    Object.keys(d).forEach( 
+      (k) => sailScoreDB.objectStoreNames.includes(k)?d[k].forEach(
+      (i) => sailScoreDB.saveIDBObject(k, i)):null );
+    pop.notify('Import all data', 'Import succesfully done!');
+  }
 }
 
 /* FRONT END CLASSES */
@@ -1463,6 +1492,7 @@ var pop = {
     addToPopup(pop.title, html);
   },
   alert: function(tit='', msg=''){
+    pop.title = tit;
     let html = `<div class="confirm"><div class="confirm-question">${msg}</div></div><div class="popup-buttons center">
         <button type="button" onclick="pop.response(true)"> ok </button>
       </div>`;
@@ -1471,6 +1501,7 @@ var pop = {
    
   },
   notify: function(tit='', msg='', time=1500){
+    pop.title = tit;
     let html = `<div class="confirm"><div class="confirm-question">${msg}</div></div>`;
     addToPopup(pop.title, html);
     setTimeout(removeFromPopup, time);
