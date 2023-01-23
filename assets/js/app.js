@@ -323,6 +323,7 @@ class Sailor extends entity {
     this.fivNumber = s.fiv?s.fiv:'';
     this.birthDate = s.birthdate?s.birthdate:0;
     this.club = s.club?stripHtml(s.club):'';
+    this.gender = s.gender==='F'?s.gender:'M';
   };
   
   get fullName(){
@@ -1050,6 +1051,12 @@ function add_sailor(e) {
       <div class="field-group">
         <label>FIV num.</label> <div class="form-control"><input type="number" name="fiv" /></div>
       </div>
+      <div class="field-group">
+        <label>Gender</label> <div class="form-control"><select name="gender">
+        <option value="M"> M </option>
+        <option value="F"> F </option>
+        </select>
+      </div>
       <div class="form-buttons">
         <input type="hidden" name="id" />
         <button type="reset">Reset</button> <button type="button" data-role="save_sailor">Save</button>
@@ -1082,6 +1089,12 @@ function edit_sailor(e) {
       </div>
       <div class="field-group">
         <label>FIV num.</label> <div class="form-control"><input type="number" name="fiv" value="${s.fiv}" /></div>
+      </div>
+      <div class="field-group">
+        <label>Gender</label> <div class="form-control"><select name="gender">
+        <option value="M" ${s.gender==='M'?'selected':''}>M</option>
+        <option value="F"${s.gender==='F'?'selected':''}>F</option>
+        </select>
       </div>
       <div class="form-buttons">
         <input type="hidden" name="id" value="${s.id}" />
