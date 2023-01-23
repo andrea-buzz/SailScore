@@ -3,6 +3,7 @@ class SailScoreDB {
   
   constructor() {
     Object.defineProperty(this, '_cached', {value: {}, writable: true, enumerable: false, configurable: true });
+    this.objectStoreNames = {};
     this.dbName = 'SailScoreDB';
     this.conn = this.openDB();
     this.cached = true;
@@ -14,15 +15,16 @@ class SailScoreDB {
     objList.forEach( (o) => actionList.forEach( (a) => this.eventList.push('on' + o + a) ) );
     this.events = {};
     this.eventList.forEach((i) => this.events[i] = new Event(i, {"bubbles":true, "cancelable":false} ));
+    this.renewAllCached();
     return this;
   }
   
   openDB(){
     const r = window.indexedDB.open( this.dbName, 1);
-    r.onupgradeneeded = (event) => {
-      const db = event.target.result;
+    r.onupgradeneeded = (e) => {
+      const db = e.target.result;
 
-      db.onerror = (event) => {
+      db.onerror = (e) => {
         console.log( "Error loading database.");
       };
       this.createClubStore(db);
@@ -31,6 +33,7 @@ class SailScoreDB {
       this.createRaceStore(db);
       this.createBoatClassStore(db);
       this.createSailorStore(db);
+      this.createResultStore(db);
     };
     
     r.onerror = function(e) {
@@ -65,7 +68,7 @@ class SailScoreDB {
     o.createIndex("name", "name", { unique: false });
   }
   
-  createResultsStore(db){
+  createResultStore(db){
     const o = db.createObjectStore(this.entities.Result, { keyPath: "id", autoIncrement: true } ); 
     o.createIndex("id", "id", { unique: true });
     o.createIndex("regatta_id", "regatta_id", { unique: false });
@@ -115,6 +118,7 @@ class SailScoreDB {
       if(fn){
         q.onsuccess = fn;
       }
+      this.renewCached(osName);
       document.dispatchEvent( sailScoreDB.events['on' + osName + 'Save'] );
     };
   }
@@ -132,6 +136,7 @@ class SailScoreDB {
       if(fn){
         q.onsuccess = fn;
       }
+      this.renewCached(osName);
       document.dispatchEvent( sailScoreDB.events['on' + osName + 'Delete'] );
     };
   }
@@ -160,7 +165,7 @@ class SailScoreDB {
     };
     r.onsuccess = (e)=>{
       const db = e.target.result;
-      const t = db.transaction([osName], "readwrite");
+      const t = db.transaction([osName], "readonly");
       const s = t.objectStore(osName);
       const q = s.getAll();
       if(fn){
@@ -211,7 +216,23 @@ class SailScoreDB {
     this.clearObjectStore(osName, fn );
   }
   /* Cached data */
-  
+  renewAllCached(){
+    const ons = this.entities;//this.objectStoreNames;
+    Object.keys(this.entities).forEach(
+            (k) => Object.keys(ons).includes(k)?
+            this.renewCached(k)
+            :null);
+  }
+  renewCached(osName){
+    try{
+      this.getAllIDBObject(osName, 
+        (e) => this._cached[osName.toLowerCase()] = e.target.result.map(
+          (i) => Function( 'o', 'return new ' + osName + '(o);' )(i) ) );
+    }
+    catch(e){
+      console.log(e.message);
+    }
+  }
   set cached( c ){
     if(0 === Object.keys(this._cached).length){
       this._cached = {club:[], regatta:[], sailor:[], competitor:[], race:[], boatclass:[]};
@@ -452,6 +473,11 @@ class Regatta extends entity{
   }
 }
 
+class Race extends entity {
+  constructor(b){
+    
+  }
+}
 
 /* SINGLETONS */
 
@@ -484,8 +510,8 @@ class ClubSingleton{
   getAll( fn = null ){
     const iDBObjectName = this.osName();
     const onsuccess = (e) => {
-      sailScoreDB.club = e.target.result.map((b) => new Club(b));
-      console.log("Club recuperati con successo.");
+    //sailScoreDB.club = e.target.result.map((b) => new Club(b));
+      
       if(fn){
         fn(e);
       }
@@ -523,8 +549,8 @@ class RegattaSingleton{
   getAll( fn = null ){
     const iDBObjectName = this.osName();
     const onsuccess = (e) => {
-      sailScoreDB.regatta = e.target.result.map((b) => new Regatta(b));
-      console.log("Regatta recuperati con successo.");
+      //sailScoreDB.regatta = e.target.result.map((b) => new Regatta(b));
+      
       if(fn){
         fn(e);
       }
@@ -564,8 +590,8 @@ class CompetitorSingleton{
   }
   getAll(fn = null){
     const onsuccess = (e) => {
-      sailScoreDB.competitor = e.target.result.map((b) => new Competitor(b));
-      console.log("Competitor recuperati con successo.");
+      //sailScoreDB.competitor = e.target.result.map((b) => new Competitor(b));
+      
       if(fn){
         fn(e);
       }
@@ -606,8 +632,8 @@ class BoatClassSingleton {
   }
   getAll(fn = null){
     const onsuccess = (e) => {
-      sailScoreDB.boatclass = e.target.result.map((b) => new BoatClass(b));
-      console.log("BoatClass recuperati con successo.");
+      //sailScoreDB.boatclass = e.target.result.map((b) => new BoatClass(b));
+      
       if(fn){
         fn(e);
       }
@@ -646,8 +672,8 @@ class SailorSingleton {
   
   getAll(fn = null){
     const onsuccess = (e) => {
-      sailScoreDB.sailor = e.target.result.map((b) => new Sailor(b));
-      console.log("Sailors recuperati con successo.");
+      //sailScoreDB.sailor = e.target.result.map((b) => new Sailor(b));
+      
       if(fn){
         fn(e);
       }
