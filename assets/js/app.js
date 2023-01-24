@@ -1053,9 +1053,9 @@ function add_sailor(e) {
       </div>
       <div class="field-group">
         <label>Gender</label> <div class="form-control"><select name="gender">
-        <option value="M"> M </option>
-        <option value="F"> F </option>
-        </select>
+        <option value="M"> Male </option>
+        <option value="F"> Female </option>
+        </select></div>
       </div>
       <div class="form-buttons">
         <input type="hidden" name="id" />
@@ -1092,9 +1092,9 @@ function edit_sailor(e) {
       </div>
       <div class="field-group">
         <label>Gender</label> <div class="form-control"><select name="gender">
-        <option value="M" ${s.gender==='M'?'selected':''}>M</option>
-        <option value="F"${s.gender==='F'?'selected':''}>F</option>
-        </select>
+        <option value="M" ${s.gender==='M'?'selected':''}> Male </option>
+        <option value="F"${s.gender==='F'?'selected':''}> Female </option>
+        </select></div>
       </div>
       <div class="form-buttons">
         <input type="hidden" name="id" value="${s.id}" />
