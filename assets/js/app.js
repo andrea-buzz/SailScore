@@ -372,6 +372,15 @@ class Competitor extends entity {
   get Crew(){
     return this.crew;
   }
+  get HelmFullName(){
+    return this.helm.fullName;
+  }
+  get Boat(){
+    return this.boatclass.name;
+  }
+  get PY(){
+    return this.boatclass.rating;
+  }
 }
 
 class BoatClass extends entity{
@@ -1437,8 +1446,15 @@ function save_regatta(e){
 
 /* competitor */
 function showCompetitor(){
-  
+  const onsuccess = (e) => {
+    const fields = [{label:'id', field:'id'}, {label:'Helm', field:'HelmFullName'},
+      {label: 'Sail n°', field: 'sailNumber'}, {label:'Boat Class', field:'Boat'}, {label:'P.Y. n°', field:'PY'}];
+    renderTable(document.querySelector('[data-list="competitor"]'), Competitor, e.target.result, true, fields );
+  };
+  competitorSingleton.getAll( onsuccess );
 }
+
+showCompetitor();
 document.querySelector('[data-role="add_competitor"]').addEventListener('click', add_competitor);
 
 function add_competitor(e) {
@@ -1463,10 +1479,10 @@ function add_competitor(e) {
     </form>`;
   addToPopup(title, form);
   
-  
+  const s = new Competitor();
 
   const theForm = document.querySelector('.popup-fixed form');
-  theForm.competitor = new Competitor();
+  theForm.competitor = s;
   //theForm.competitor.boatclass = sailScoreDB._cached.boatclass.find((b) => b.name === 'ILCA 6');
   
   const sel_helm = theForm.querySelector('select[name="helm"]');
@@ -1489,6 +1505,59 @@ function add_competitor(e) {
   const mc = new MultiChoice(tcmp, theForm.competitor.crew, sailScoreDB._cached.sailor, template);
 }
 
+function edit_competitor(e) {
+  competitorSingleton.get(Number(e.currentTarget.getAttribute('data-id')), function(ev){
+    const title = 'Edit Competitor';
+    let s = new Competitor(ev.currentTarget.result);
+     const form = `<form data-role="form-competitor">
+      <div class="field-group">
+        <label>Helm</label> <div class="form-control"><select name="helm"></select></div>
+      </div>
+      <div class="field-group">
+        <label>Crew</label> <div class="form-control"><input type="checkbox" class="mc-toggle" /><input class="multichoice mc-collapse" type="text" name="crew" /></div>
+      </div>
+      <div class="field-group">
+        <label>Sail Number</label> <div class="form-control"><input type="text" name="sailNumber" /></div>
+      </div>
+      <div class="field-group">
+        <label>Boat Class</label> <div class="form-control"><select name="boatClass"></select></div>
+      </div>
+      <div class="form-buttons">
+        <input type="hidden" name="id" />
+        <button type="reset">Reset</button> <button type="button" data-role="save_competitor">Save</button>
+      </div>
+    </form>`;
+    addToPopup(title, form);
+    
+    const theForm = document.querySelector('.popup-fixed form');
+    theForm.competitor = s;
+    const sel_helm = theForm.querySelector('select[name="helm"]');
+    sel_helm.innerHTML = sailScoreDB._cached.sailor.map((s) => `<option value="${s.id}">${s.fullName}</option>` ).join('\n');
+    if(s.helm){
+      sel_helm.dataset.value = JSON.stringify(s.helm);
+      sel_helm.value = s.helm_id;
+    }
+    sel_helm.addEventListener('input', (e) => {
+          const h = e.currentTarget;
+          const hid = h.selectedIndex?parseInt(h.options[h.selectedIndex].value): -1;
+          s.Helm = sailScoreDB._cached.sailor.find((s) => s.id === hid );});
+    sel_helm.dispatchEvent(event_input);
+
+    const sel_boat = theForm.querySelector('select[name="boatClass"]');
+    sel_boat.innerHTML = sailScoreDB._cached.boatclass.map((s) => `<option value="${s.id}">${s.name}</option>` ).join('\n');
+    sel_boat.addEventListener('input', (e) => { 
+          s.boatclass = sailScoreDB._cached.boatclass.find((s) => s.id === parseInt(e.currentTarget.selectedOptions[0].value ));});
+    sel_boat.dispatchEvent(event_input);
+
+    theForm.querySelector('[name="sailNumber"]').addEventListener('change', (e) => s.sailNumber = e.currentTarget.value);
+
+    theForm.querySelector('[data-role="save_competitor"]').addEventListener('click', save_competitor);
+    const tcmp = theForm.querySelector('input[name="crew"]');
+    const template = '<li data-id="${c.id}"><i>${c.fullName}</i> <strong>${c.fiv}</strong></li>';
+    const mc = new MultiChoice(tcmp, theForm.competitor.crew, sailScoreDB._cached.sailor, template);
+    document.querySelector('[data-role="save_competitor"]').addEventListener('click', save_competitor);
+  });
+}
 
 
 function save_competitor(e){
@@ -1585,7 +1654,7 @@ function show_started_competitors(){
     {name: "Guido Rocchi", sail_number: "209111", boat_class: "ILCA 7"},
     {name: "Max Cinquepalmi", sail_number: "183555", boat_class: "ILCA 7"}
   ];
-  let tag_competitors = document.querySelector('[data-list="competitor"]');
+  let tag_competitors = document.querySelector('[data-list="racing-competitor"]');
   competitors.forEach(c => tag_competitors.insertAdjacentHTML('afterBegin',`
 <div class="competitor" data-status="started"> 
   <button type="button" data-role="pull-top">&#8679;</button> 
