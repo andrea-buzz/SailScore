@@ -105,6 +105,28 @@ class SailScoreDB {
     if('function' === typeof importPortsmouthYardstick) importPortsmouthYardstick(false);
   }
   
+  saveIDBObjectArray(osName, arr=[], fn = null){
+    const r = this.openDB();
+    r.onerror = function(e) {
+      console.log("Error opening database: " + e.target.errorCode);
+    };
+    r.onsuccess = (e)=>{
+      const db = e.target.result;
+      const t = db.transaction([osName], "readwrite");
+      const s = t.objectStore(osName);
+      let rr = null;
+      const q = arr.length - 1;
+      arr.forEach((o, i) => { let r = s.put(o); if( (i===q) && fn){r.onsuccess = fn;}} );
+      
+      if(fn){
+        //rr.onsuccess = fn;
+      }
+      //this.renewCached(osName);
+      //document.dispatchEvent( sailScoreDB.events['on' + osName + 'Save'] );
+    };
+  }
+  
+  
   saveIDBObject(osName, obj, fn = null){
     const r = this.openDB();
     r.onerror = function(e) {
@@ -729,7 +751,9 @@ function dropDatabase( confirm = false ){
     pop.notify('Drop Database', 'Database dropped successfully');
   }
 }
-
+function clearCacheStorage(){
+  caches.delete('SailScore-v1');
+}
 function importPortsmouthYardstick(confirm = false){
   const url = 'https://andrea-buzz.github.io/SailScore/data/py-list.json';
   var xhr = new XMLHttpRequest();
@@ -812,21 +836,27 @@ function importAllData(){
   }
   function loadJSON(e){
     let fc;
-    try{
+    try {
       fc = e.target.result;
       data = JSON.parse(fc);
       importData(data);
-      console.log(data);
     }
     catch(e) {
       pop.alert("Import data Error", e.message);
     }
   }
   function importData(d){
-    Object.keys(d).forEach( 
-      (k) => sailScoreDB.objectStoreNames.includes(k)?d[k].forEach(
-      (i) => sailScoreDB.saveIDBObject(k, i)):null );
+    const keys = Object.keys(d).filter( (k) => sailScoreDB.objectStoreNames.includes(k) );
+    let kl = keys.length - 1; 
+    keys.forEach( (k, i) => { 
+        let cb =  (i === kl)? notifyEnd: null;
+        sailScoreDB.saveIDBObjectArray(k, d[k], cb);
+      } );
+  }
+  function notifyEnd(){
+    sailScoreDB.renewAllCached();
     pop.notify('Import all data', 'Import succesfully done!');
+    
   }
 }
 
