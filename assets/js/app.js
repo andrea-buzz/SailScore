@@ -3,6 +3,7 @@ class SailScoreDB {
   
   constructor() {
     Object.defineProperty(this, '_cached', {value: {}, writable: true, enumerable: false, configurable: true });
+    this.objectStoreNames = {};
     this.dbName = 'SailScoreDB';
     this.conn = this.openDB();
     this.cached = true;
@@ -14,15 +15,16 @@ class SailScoreDB {
     objList.forEach( (o) => actionList.forEach( (a) => this.eventList.push('on' + o + a) ) );
     this.events = {};
     this.eventList.forEach((i) => this.events[i] = new Event(i, {"bubbles":true, "cancelable":false} ));
+    this.renewAllCached();
     return this;
   }
   
   openDB(){
     const r = window.indexedDB.open( this.dbName, 1);
-    r.onupgradeneeded = (event) => {
-      const db = event.target.result;
+    r.onupgradeneeded = (e) => {
+      const db = e.target.result;
 
-      db.onerror = (event) => {
+      db.onerror = (e) => {
         console.log( "Error loading database.");
       };
       this.createClubStore(db);
@@ -31,11 +33,13 @@ class SailScoreDB {
       this.createRaceStore(db);
       this.createBoatClassStore(db);
       this.createSailorStore(db);
+      this.createResultStore(db);
     };
     
-    r.onerror = function(event) {
-      console.log("Error opening database.: " + event.target.errorCode);
+    r.onerror = function(e) {
+      console.log("Error opening database: " + e.target.errorCode);
     };
+    r.onsuccess = (e) => this.objectStoreNames = [...e.target.result.objectStoreNames];
     return r;
   }
   deleteDatabase( force = false){
@@ -64,7 +68,7 @@ class SailScoreDB {
     o.createIndex("name", "name", { unique: false });
   }
   
-  createResultsStore(db){
+  createResultStore(db){
     const o = db.createObjectStore(this.entities.Result, { keyPath: "id", autoIncrement: true } ); 
     o.createIndex("id", "id", { unique: true });
     o.createIndex("regatta_id", "regatta_id", { unique: false });
@@ -101,10 +105,32 @@ class SailScoreDB {
     if('function' === typeof importPortsmouthYardstick) importPortsmouthYardstick(false);
   }
   
+  saveIDBObjectArray(osName, arr=[], fn = null){
+    const r = this.openDB();
+    r.onerror = function(e) {
+      console.log("Error opening database: " + e.target.errorCode);
+    };
+    r.onsuccess = (e)=>{
+      const db = e.target.result;
+      const t = db.transaction([osName], "readwrite");
+      const s = t.objectStore(osName);
+      let rr = null;
+      const q = arr.length - 1;
+      arr.forEach((o, i) => { let r = s.put(o); if( (i===q) && fn){r.onsuccess = fn;}} );
+      
+      if(fn){
+        //rr.onsuccess = fn;
+      }
+      //this.renewCached(osName);
+      //document.dispatchEvent( sailScoreDB.events['on' + osName + 'Save'] );
+    };
+  }
+  
+  
   saveIDBObject(osName, obj, fn = null){
     const r = this.openDB();
     r.onerror = function(e) {
-      console.log("Errore nell'apertura del database: " + e.target.errorCode);
+      console.log("Error opening database: " + e.target.errorCode);
     };
     r.onsuccess = (e)=>{
       const db = e.target.result;
@@ -114,6 +140,7 @@ class SailScoreDB {
       if(fn){
         q.onsuccess = fn;
       }
+      this.renewCached(osName);
       document.dispatchEvent( sailScoreDB.events['on' + osName + 'Save'] );
     };
   }
@@ -121,7 +148,7 @@ class SailScoreDB {
   deleteIDBObject(osName, id, fn = null){
     const r = this.openDB();
     r.onerror = function(e) {
-      console.log("Errore nell'apertura del database: " + e.target.errorCode);
+      console.log("Error opening database: " + e.target.errorCode);
     };
     r.onsuccess = (e)=>{
       const db = e.target.result;
@@ -131,6 +158,7 @@ class SailScoreDB {
       if(fn){
         q.onsuccess = fn;
       }
+      this.renewCached(osName);
       document.dispatchEvent( sailScoreDB.events['on' + osName + 'Delete'] );
     };
   }
@@ -138,7 +166,7 @@ class SailScoreDB {
   getIDBObject(osName, id, fn = null){
     const r = this.openDB();
     r.onerror = function(e) {
-      console.log("Errore nell'apertura del database: " + e.target.errorCode);
+      console.log("Error opening database: " + e.target.errorCode);
     };
     r.onsuccess = (e)=>{
       const db = e.target.result;
@@ -155,11 +183,11 @@ class SailScoreDB {
   getAllIDBObject(osName, fn = null){
     const r = this.openDB();
     r.onerror = function(e) {
-      console.log("Errore nell'apertura del database: " + e.target.errorCode);
+      console.log("Error opening database: " + e.target.errorCode);
     };
     r.onsuccess = (e)=>{
       const db = e.target.result;
-      const t = db.transaction([osName], "readwrite");
+      const t = db.transaction([osName], "readonly");
       const s = t.objectStore(osName);
       const q = s.getAll();
       if(fn){
@@ -210,7 +238,23 @@ class SailScoreDB {
     this.clearObjectStore(osName, fn );
   }
   /* Cached data */
-  
+  renewAllCached(){
+    const ons = this.entities;//this.objectStoreNames;
+    Object.keys(this.entities).forEach(
+            (k) => Object.keys(ons).includes(k)?
+            this.renewCached(k)
+            :null);
+  }
+  renewCached(osName){
+    try{
+      this.getAllIDBObject(osName, 
+        (e) => this._cached[osName.toLowerCase()] = e.target.result.map(
+          (i) => Function( 'o', 'return new ' + osName + '(o);' )(i) ) );
+    }
+    catch(e){
+      console.log(e.message);
+    }
+  }
   set cached( c ){
     if(0 === Object.keys(this._cached).length){
       this._cached = {club:[], regatta:[], sailor:[], competitor:[], race:[], boatclass:[]};
@@ -252,7 +296,7 @@ class SailScoreDB {
   }
 }
 const sailScoreDB = new SailScoreDB(); 
-sailScoreDB.eventList.forEach((i) => document.addEventListener(i, (e) => console.log(e.type + ' fired')));
+//sailScoreDB.eventList.forEach((i) => document.addEventListener(i, (e) => console.log(e.type + ' fired')));
 
 /* ENTITIES */
 class entity {
@@ -301,6 +345,7 @@ class Sailor extends entity {
     this.fivNumber = s.fiv?s.fiv:'';
     this.birthDate = s.birthdate?s.birthdate:0;
     this.club = s.club?stripHtml(s.club):'';
+    this.gender = s.gender==='F'?s.gender:'M';
   };
   
   get fullName(){
@@ -326,36 +371,37 @@ class Competitor extends entity {
   constructor(c = {regatta_id: 0, helm_id: 0, crew_ids:[], boat_id:null, sailNumber:'', id: null}) {
     super(c);
     //this.defineProperty = {_data: {value: {}, writable: true, enumerable: true, configurable: true}};
-    let private_data = '#data';
-    this[private_data] = {};
     this.regatta_id = c.regatta_id;
     this.helm_id = c.helm_id;
     this.crew_ids = c.crew_ids;
     this.sailNumber = stripHtml(c.sailNumber);
-    this.helm = {};
-    this.crew = [];
+    this.Helm = c.helm;
+    this.Crew = c.crew || [];
+    this.boatclass = c.boatclass;
     
   }
-  set _data(o){
-    let n = o;
-  }
-  get _data(){
-    const d = Object.assign({}, this['#data']);
-    return d;
-  }
-  set helm(o){
-    this['#data'].helm = (o instanceof Sailor)?o:new Sailor(o);
+  set Helm(o){
+    this.helm = (o instanceof Sailor)?o:new Sailor(o);
     this.helm_id = this.helm.id; 
   }
-  get helm(){
-    return this['#data'].helm;
+  get Helm(){
+    return this.helm;
   }
-  set crew(o){
-    this['#data'].crew = o.map( (s) => (s instanceof Sailor)?s:new Sailor(s) );
+  set Crew(o){
+    this.crew = o.map( (s) => (s instanceof Sailor)?s:new Sailor(s) );
     this.crew_ids = this.crew.map((s) => s.id);
   }
-  get crew(){
-    return this['#data'].crew;
+  get Crew(){
+    return this.crew;
+  }
+  get HelmFullName(){
+    return this.helm.fullName;
+  }
+  get Boat(){
+    return this.boatclass.name;
+  }
+  get PY(){
+    return this.boatclass.rating;
   }
 }
 
@@ -377,7 +423,11 @@ class Regatta extends entity{
     this.endDate = b.enddate?b.enddate:0;
     this.UsePY = b.usePY;
     this.Club = b.club;
-    this.competitors = b.competitors?b.competitors:[];
+    this.maxraces = b.maxraces;
+    this.DiscardPattern = b.discardpattern;
+    this.Competitors = b.competitors?b.competitors:[];
+    this.races = b.races?b.races:[];
+    this.results = b.results?b.results:[];
   }
   get startDate(){
     return ( 0 === this.startdate)?'':new Date( this.startdate ).toLocaleDateString();
@@ -399,7 +449,7 @@ class Regatta extends entity{
       o = ('string' === typeof c)? JSON.parse(c): c;
     }
     catch(e){
-      console.log(e);
+      console.log(e.message);
       o.name = c;
     }
     finally{
@@ -412,6 +462,26 @@ class Regatta extends entity{
   get clubName() {
     return ('string' === typeof this.club)? this.club: this.Club.name;
   }
+  set Competitors(c) {
+    let o = [];
+    
+    try{
+      if(Array.isArray(c)){
+        o = c.map((i)=> i instanceof Competitor?i: new Competitor(i));
+      }else{
+        o = ('string' === typeof c)? JSON.parse(c): c;  
+      }
+    }
+    catch(e){
+      console.log(e.message);
+    }
+    finally{
+      this.competitors = o;
+    }
+  }
+  get Competitors() {
+    return this.competitors;
+  }
   set UsePY(o){
     if ('string' === typeof o){
       this.usePY = Boolean(o === 'true');
@@ -419,8 +489,27 @@ class Regatta extends entity{
       this.usePY = Boolean(o === true);
     }
   }
+  set MaxRaces(o){
+    !isNaN(o)?Number(o):2;
+  }
+  set DiscardPattern(o){
+    let d = [];
+    if ('string' === typeof o){
+       d = o.split(/\D/).map((i) => parseInt(i));
+    }else if('undefined' === typeof o ){
+      
+    }else{
+      d = o.length?o.map((i) => parseInt(i)):[];
+    }
+    this.discardpattern = d;
+  }
 }
 
+class Race extends entity {
+  constructor(b){
+    
+  }
+}
 
 /* SINGLETONS */
 
@@ -453,8 +542,8 @@ class ClubSingleton{
   getAll( fn = null ){
     const iDBObjectName = this.osName();
     const onsuccess = (e) => {
-      sailScoreDB.club = e.target.result.map((b) => new Club(b));
-      console.log("Club recuperati con successo.");
+    //sailScoreDB.club = e.target.result.map((b) => new Club(b));
+      
       if(fn){
         fn(e);
       }
@@ -492,8 +581,8 @@ class RegattaSingleton{
   getAll( fn = null ){
     const iDBObjectName = this.osName();
     const onsuccess = (e) => {
-      sailScoreDB.regatta = e.target.result.map((b) => new Regatta(b));
-      console.log("Regatta recuperati con successo.");
+      //sailScoreDB.regatta = e.target.result.map((b) => new Regatta(b));
+      
       if(fn){
         fn(e);
       }
@@ -533,8 +622,8 @@ class CompetitorSingleton{
   }
   getAll(fn = null){
     const onsuccess = (e) => {
-      sailScoreDB.boatclass = e.target.result.map((b) => new Competitor(b));
-      console.log("Competitor recuperati con successo.");
+      //sailScoreDB.competitor = e.target.result.map((b) => new Competitor(b));
+      
       if(fn){
         fn(e);
       }
@@ -575,8 +664,8 @@ class BoatClassSingleton {
   }
   getAll(fn = null){
     const onsuccess = (e) => {
-      sailScoreDB.boatclass = e.target.result.map((b) => new BoatClass(b));
-      console.log("BoatClass recuperati con successo.");
+      //sailScoreDB.boatclass = e.target.result.map((b) => new BoatClass(b));
+      
       if(fn){
         fn(e);
       }
@@ -615,12 +704,11 @@ class SailorSingleton {
   
   getAll(fn = null){
     const onsuccess = (e) => {
-      sailScoreDB.boatclass = e.target.result.map((b) => new BoatClass(b));
-      console.log("Sailors recuperati con successo.");
+      //sailScoreDB.sailor = e.target.result.map((b) => new Sailor(b));
+      
       if(fn){
         fn(e);
       }
-      sailScoreDB.sailor = e.target.result.map((b) => new Sailor(b));
     };
     sailScoreDB.getAllIDBObject(this.osName(), onsuccess);
   }
@@ -663,7 +751,9 @@ function dropDatabase( confirm = false ){
     pop.notify('Drop Database', 'Database dropped successfully');
   }
 }
-
+function clearCacheStorage(){
+  caches.delete('SailScore-v1');
+}
 function importPortsmouthYardstick(confirm = false){
   const url = 'https://andrea-buzz.github.io/SailScore/data/py-list.json';
   var xhr = new XMLHttpRequest();
@@ -706,7 +796,7 @@ function exportAllData() {
   function getTable(tname){
     const r2 = sailScoreDB.openDB();
     r2.onerror = function(e1) {
-      console.log("Errore nell'apertura del database: " + e1.target.errorCode);
+      console.log("Error opening database: " + e1.target.errorCode);
     };
     r2.onsuccess = (e2) => {
       const db = e2.target.result;
@@ -726,17 +816,144 @@ function exportAllData() {
     }
   }
   function exportAsJSON(){
-    const j = JSON.stringify([data]);
+    const j = JSON.stringify(data);
     downloadString(j, 'json', 'SailScoreAllData.json');
   }
   return this;
 }
 
 function importAllData(){
-  pop.notify('Import all data', 'Sorry, not implemented yet!');
+  const fs = document.createElement('input');
+  let data = {};
+  fs.type = "file";
+  fs.addEventListener('change', readFile);
+  fs.click();
+  function readFile(e){
+    const mf = e.currentTarget.files[0];
+    const r = new FileReader();
+    r.addEventListener("load", loadJSON);
+    r.readAsBinaryString(mf);
+  }
+  function loadJSON(e){
+    let fc;
+    try {
+      fc = e.target.result;
+      data = JSON.parse(fc);
+      importData(data);
+    }
+    catch(e) {
+      pop.alert("Import data Error", e.message);
+    }
+  }
+  function importData(d){
+    const keys = Object.keys(d).filter( (k) => sailScoreDB.objectStoreNames.includes(k) );
+    let kl = keys.length - 1; 
+    keys.forEach( (k, i) => { 
+        let cb =  (i === kl)? notifyEnd: null;
+        sailScoreDB.saveIDBObjectArray(k, d[k], cb);
+      } );
+  }
+  function notifyEnd(){
+    sailScoreDB.renewAllCached();
+    pop.notify('Import all data', 'Import succesfully done!');
+    
+  }
 }
 
+/* FRONT END CLASSES */
+class MultiChoice{
+  constructor(tag, values, availables, template){
+    this.Tag = tag;
+    this.Values = values;
+    this.Availables = availables;
+    this.Template = template?template:'<li data-id="${c.id}" title="${c.boatclass.name}"><i>${c.helm.fullName}</i> <strong>${c.sailNumber}</strong></li>';
+    this.createList();
+    this.populateList();
+  }
+  set Template(c){
+    this.template = c;
+  }
+  renderTemplate (c){
+    return Function( 'c', 'return `' + this.template + '`;' )(c);
+  }
+  set Tag(s){
+    this.tag = (s instanceof HTMLInputElement)? s: null;
+  }
+  set Values(a){
+    this.values = a;
+  }
+  set Availables(a){
+    this.availables = a;
+  }
+  createList(){
+    const wrap = document.createElement('div');
+    wrap.classList.add('wrap-multichoice');
+    const ula = document.createElement('ul');
+    ula.classList.add('avail');
+    this.ula = ula;
+    
+    const uli = document.createElement('ul');
+    uli.classList.add('included');
+    this.uli = uli;
+    wrap.appendChild(ula);
+    wrap.appendChild(uli);
+    this.tag.after(wrap);
+    this.tag.addEventListener('keyup', (c) => this.filter(c.currentTarget.value.toLowerCase()) );
+    
+  }
+  populateList(){
+    const c96 = String.fromCharCode(96);
+    const T = this.Template;
+    
+    this.availables.forEach((c) => this.ula.insertAdjacentHTML('beforeEnd', this.renderTemplate(c)  )); //  '`' + tmpl + '`'
+    this.ula.querySelectorAll('li').forEach((l) => l.addEventListener('click', (e) => {
+      const nd = e.currentTarget;
+      if(false === nd.classList.contains('disabled')){
+        const nc = nd.cloneNode(true);
+        nc.addEventListener('click', (n) => { 
+          n.currentTarget.remove(); 
+          nd.classList.remove('disabled'); 
+          this.setDataset(); 
+          this.removeFilter(); 
+        });
+        this.uli.append(nc);
+        this.setDataset();
+        
+        nd.classList.add('disabled');
+      }
+      this.removeFilter();
+    }));
+    this.values.forEach((c)=> {
+      this.uli.insertAdjacentHTML('beforeEnd', this.renderTemplate(c) );
+      this.ula.querySelector(`[data-id="${c.id}"]`).classList.add('disabled');
+      });
+    this.uli.querySelectorAll('li').forEach((l) => l.addEventListener('click',(e) => {
+        const t = e.currentTarget;
+        const id = t.dataset.id;
+        t.remove();
+        this.ula.querySelector(`[data-id="${id}"].disabled`).classList.remove('disabled');
+      }));
+  }
+  filter (t){
+    this.ula.childNodes.forEach((l) => l.style.display = l.innerText.toLowerCase().includes(t)?'':'none');
+  }
+  removeFilter() {
+    this.ula.childNodes.forEach((l) => l.style.display = this.tag.value = ''); 
+  }
+  setDataset() { 
+    this.included = [...this.uli.querySelectorAll('.included > li')]
+    .map((l) => this.availables.find( (i) => i.id === parseInt(l.dataset.id) ) ); 
+    this.tag.dataset.value=JSON.stringify(this.included);
+  };
+}
+
+
 /* FRONT END FUNCTIONS */
+
+const event_input = new Event('input', {
+        bubbles: true,
+        cancelable: true
+    });
 
 function downloadString(text, fileType, fileName) {
   var blob = new Blob([text], { type: fileType });
@@ -873,6 +1090,12 @@ function add_sailor(e) {
       <div class="field-group">
         <label>FIV num.</label> <div class="form-control"><input type="number" name="fiv" /></div>
       </div>
+      <div class="field-group">
+        <label>Gender</label> <div class="form-control"><select name="gender">
+        <option value="M"> Male </option>
+        <option value="F"> Female </option>
+        </select></div>
+      </div>
       <div class="form-buttons">
         <input type="hidden" name="id" />
         <button type="reset">Reset</button> <button type="button" data-role="save_sailor">Save</button>
@@ -905,6 +1128,12 @@ function edit_sailor(e) {
       </div>
       <div class="field-group">
         <label>FIV num.</label> <div class="form-control"><input type="number" name="fiv" value="${s.fiv}" /></div>
+      </div>
+      <div class="field-group">
+        <label>Gender</label> <div class="form-control"><select name="gender">
+        <option value="M" ${s.gender==='M'?'selected':''}> Male </option>
+        <option value="F"${s.gender==='F'?'selected':''}> Female </option>
+        </select></div>
       </div>
       <div class="form-buttons">
         <input type="hidden" name="id" value="${s.id}" />
@@ -1094,8 +1323,6 @@ document.querySelector('[data-role="add_regatta"]').addEventListener('click', ad
 
 function add_regatta(e) {
   const title = 'Add Regatta';
-  let club = JSON.stringify( new Club({name:'Circolo Velico Ardizio'} ));
-  
   const form = `<form data-role="form-regatta">
       <div class="field-group">
         <label>Name</label> <div class="form-control"><input type="text" name="name" /></div>
@@ -1110,10 +1337,16 @@ function add_regatta(e) {
         <label>Use PY</label> <div class="form-control"><input type="checkbox" name="usePY" value="false" onclick="this.value=this.checked" /></div>
       </div>
       <div class="field-group">
-        <label>Club</label> <div class="form-control"><input type="text" name="club" value="" /></div>
+        <label>Club</label> <div class="form-control"><select name="club"></select></div>
       </div>
       <div class="field-group">
-        <label>Competitors</label> <div class="form-control"><button type="button" name="competitors">Add competitor</button></div>
+        <label>Max Races</label> <div class="form-control"><input type="number" name="maxraces" min="1" max="99" value="2" /></div>
+      </div>  
+      <div class="field-group">
+        <label>Discard Pattern</label> <div class="form-control"><input type="text" name="discardpattern" value="0 0 0 1 1 1 2 2 2 3 3 3 4 4 4" /></div>
+      </div>  
+      <div class="field-group">
+        <label>Competitors</label> <div class="form-control"><input class="multichoice" type="text" name="competitors"/></div>
       </div>
       <div class="form-buttons">
         <input type="hidden" name="id" />
@@ -1121,35 +1354,33 @@ function add_regatta(e) {
       </div>
     </form>`;
   //  addToPopup(title, form);
-  document.querySelector('[data-block="regatta"] [data-role="form-container"]').insertAdjacentHTML('beforeEnd', form);
-  document.querySelectorAll('[data-role="form-container"] button[type="reset"]').forEach( (b)=>
-          b.addEventListener('click', (e) => 
-          e.currentTarget.parentElement.parentElement.remove()) );
-  document.querySelector('form[data-role="form-regatta"] input[name="club"]')
-      .addEventListener('keyup', function(e){
+    const fc = document.querySelector('[data-block="regatta"] [data-role="form-container"]');
+    fc.insertAdjacentHTML('beforeEnd', form);
+    const theForm = fc.querySelector('form:last-child');
+    theForm.regatta = new Regatta();
+    theForm.querySelector('button[type="reset"]')
+            .addEventListener('click', (e) => theForm.remove());
+    const tag_club = document.querySelector('form[data-role="form-regatta"] select[name="club"]');
+    tag_club.innerHTML = sailScoreDB._cached.club.map((s) => `<option value="${s.id}">${s.name}</option>` ).join('');
+    tag_club.addEventListener('input', function(e){
           let t = e.currentTarget;
-          let club = new Club( sailScoreDB.cached.club(t.value)[0] );
+          let club = sailScoreDB._cached.club.find((c) => c.id === parseInt(t.value));
           t.dataset.value = JSON.stringify(club);
-          setTimeout(() => t.value = club.name, 1000);
-          console.log(club);
-      }, { passive: false });
-      /*
-  document.querySelector('form[data-role="form-regatta"] input[name="competitor"]')
-      .addEventListener('keyup', function(e){
-          let t = e.currentTarget;
-          let sailor = new Sailor( sailScoreDB.cached.sailor(t.value)[0] );
-          t.dataset.value = JSON.stringify(club);
-          setTimeout(() => t.value = sailor.fulName, 1000);
-          console.log(sailor);
-      }, { passive: false });
-  */
+      }, { passive: true });
+    tag_club.dispatchEvent(event_input);
+    const tcmp = theForm.querySelector('input[name="competitors"]');
+    const mc = new MultiChoice(tcmp, theForm.regatta.competitors, sailScoreDB._cached.competitor);
+    
+     
+     
+     
   document.querySelector('[data-role="save_regatta"]').addEventListener('click', save_regatta);
 }
-
+competitorSingleton.getAll();
 function edit_regatta(e) {
   regattaSingleton.get(Number(e.currentTarget.getAttribute('data-id')), function(ev){
     const title = 'Edit Regatta';
-    let s = new Regatta( ev.currentTarget.result );
+    const s = new Regatta( ev.currentTarget.result );
     let usePYchecked = s.usePY?'checked=="checked"':'';
     let UsePY = s.usePY.toString();
     const form = `<form data-role="form-regatta">
@@ -1166,10 +1397,16 @@ function edit_regatta(e) {
         <label>Use PY</label> <div class="form-control"><input type="checkbox" name="usePY" ${usePYchecked} value="${UsePY}" onclick="this.value=this.checked" /></div>
       </div>
       <div class="field-group">
-        <label>Club</label> <div class="form-control"><input type="text" name="club" value="${s.clubName}" /></div>
+        <label>Club</label> <div class="form-control"><select name="club"></select></div>
       </div>
       <div class="field-group">
-        <label>Competitors</label> <div class="form-control"><button type="button" name="competitors">Add competitor</button></div>
+        <label>Max Races</label> <div class="form-control"><input type="number" name="maxraces" min="1" max="99" value="${s.maxraces}" /></div>
+      </div> 
+      <div class="field-group">
+        <label>Discard Pattern</label> <div class="form-control"><input type="text" name="discardpattern" value="${s.discardpattern.join(' ')}" /></div>
+      </div>  
+      <div class="field-group">
+        <label>Competitors</label> <div class="form-control"><input class="multichoice" type="text" name="competitors"/></div>
       </div>
       <div class="form-buttons">
         <input type="hidden" name="id" value="${s.id}" />
@@ -1177,21 +1414,26 @@ function edit_regatta(e) {
       </div>
     </form>`;
     //addToPopup(title, form);
-    document.querySelector('[data-block="regatta"] [data-role="form-container"]').insertAdjacentHTML('beforeEnd', form);
-    document.querySelectorAll('[data-role="form-container"] button[type="reset"]').forEach( (b)=>
-            b.addEventListener('click', (e) => 
-            e.currentTarget.parentElement.parentElement.remove()) );
-    document.querySelector('[data-role="save_regatta"]').addEventListener('click', save_regatta);
-    document.querySelector('form[data-role="form-regatta"] input[name="club"]').dataset.value = JSON.stringify(s.Club);
-    document.querySelector('form[data-role="form-regatta"] input[name="club"]')
-      .addEventListener('keyup', function(e){
+    const fc = document.querySelector('[data-block="regatta"] [data-role="form-container"]');
+    fc.insertAdjacentHTML('beforeEnd', form);
+    const theForm = fc.querySelector('form:last-child');
+    theForm.querySelector('button[type="reset"]').addEventListener('click', (e) => 
+            e.currentTarget.parentElement.parentElement.remove());
+    theForm.querySelector('[data-role="save_regatta"]').addEventListener('click', save_regatta);
+    theForm.regatta = s;
+    const tag_club = document.querySelector('form[data-role="form-regatta"] select[name="club"]');
+    tag_club.dataset.value = JSON.stringify(s.Club);
+    tag_club.innerHTML = sailScoreDB._cached.club.map((s) => `<option value="${s.id}">${s.name}</option>` ).join('');
+    tag_club.value = s.Club.id;
+    tag_club.addEventListener('input', function(e){
           let t = e.currentTarget;
-          let club = new Club( sailScoreDB.cached.club(t.value)[0] );
+          let club = sailScoreDB._cached.club.find((c) => c.id === parseInt(t.value));
           t.dataset.value = JSON.stringify(club);
-          setTimeout(() => t.value = club.name, 1000);
-          console.log(club);
       }, { passive: true });
-    document.querySelector('form[data-role="form-regatta"] button[name="competitors"]').dataset = {value: JSON.stringify(s.competitors)};
+    tag_club.dispatchEvent(event_input);
+    const tcmp = theForm.querySelector('input[name="competitors"]');
+    const mc = new MultiChoice(tcmp, theForm.regatta.competitors, sailScoreDB._cached.competitor);
+    theForm.querySelector('input[name="competitors"]').dataset = {value: JSON.stringify(s.competitors)};
     
   });
 }
@@ -1208,21 +1450,151 @@ function delete_regatta(e){
 };
 
 function save_regatta(e){
-  const fields = e.currentTarget.parentElement.parentElement.querySelectorAll('input[name]');
-  const f_club = e.currentTarget.parentElement.parentElement.querySelector('[name="club"]');
+  const theForm = e.currentTarget.form;
+  const fields = theForm.querySelectorAll('input[name]');
+  const f_club = theForm.querySelector('[name="club"]');
+  const f_competitors = theForm.querySelector('[name="competitors"]');
+  const regatta = theForm.regatta;
   const ff = [...fields].map(f => ({name: f.name, value: f.value}));
-  const regatta = new Regatta();
+  
   regatta._setFromArray = ff;
   regatta.UsePY = regatta.usePY;
   if(f_club.dataset.value){
     const c = JSON.parse(f_club.dataset.value);
     regatta.Club = c;
   }
+  if(f_competitors.dataset.value){
+    const c = JSON.parse(f_competitors.dataset.value);
+    regatta.Competitors = c;
+  }
   regattaSingleton.save(regatta);
   regattaSingleton.getAll(showRegatta);
   //removeFromPopup();
   document.querySelector('[data-role="form-regatta"]').remove();
   //document.querySelector('[data-block="regatta"] [data-role="form-container"]').innerHTML = '';
+}
+
+/* competitor */
+function showCompetitor(){
+  const onsuccess = (e) => {
+    const fields = [{label:'id', field:'id'}, {label:'Helm', field:'HelmFullName'},
+      {label: 'Sail n°', field: 'sailNumber'}, {label:'Boat Class', field:'Boat'}, {label:'P.Y. n°', field:'PY'}];
+    renderTable(document.querySelector('[data-list="competitor"]'), Competitor, e.target.result, true, fields );
+  };
+  competitorSingleton.getAll( onsuccess );
+}
+
+showCompetitor();
+document.querySelector('[data-role="add_competitor"]').addEventListener('click', add_competitor);
+
+function add_competitor(e) {
+  const title = 'Add Competitor';
+  const form = `<form data-role="form-competitor">
+      <div class="field-group">
+        <label>Helm</label> <div class="form-control"><select name="helm"></select></div>
+      </div>
+      <div class="field-group">
+        <label>Crew</label> <div class="form-control"><input type="checkbox" class="mc-toggle" /><input class="multichoice mc-collapse" type="text" name="crew" /></div>
+      </div>
+      <div class="field-group">
+        <label>Sail Number</label> <div class="form-control"><input type="text" name="sailNumber" /></div>
+      </div>
+      <div class="field-group">
+        <label>Boat Class</label> <div class="form-control"><select name="boatClass"></select></div>
+      </div>
+      <div class="form-buttons">
+        <input type="hidden" name="id" />
+        <button type="reset">Reset</button> <button type="button" data-role="save_competitor">Save</button>
+      </div>
+    </form>`;
+  addToPopup(title, form);
+  
+  const s = new Competitor();
+
+  const theForm = document.querySelector('.popup-fixed form');
+  theForm.competitor = s;
+  //theForm.competitor.boatclass = sailScoreDB._cached.boatclass.find((b) => b.name === 'ILCA 6');
+  
+  const sel_helm = theForm.querySelector('select[name="helm"]');
+  sel_helm.innerHTML = sailScoreDB._cached.sailor.map((s) => `<option value="${s.id}">${s.fullName}</option>` ).join('\n');
+  sel_helm.addEventListener('input', (e) => { 
+        theForm.competitor.Helm = sailScoreDB._cached.sailor.find((s) => s.id === parseInt(e.currentTarget.selectedOptions[0].value ));});
+  sel_helm.dispatchEvent(event_input);
+  
+  const sel_boat = theForm.querySelector('select[name="boatClass"]');
+  sel_boat.innerHTML = sailScoreDB._cached.boatclass.map((s) => `<option value="${s.id}">${s.name}</option>` ).join('\n');
+  sel_boat.addEventListener('input', (e) => { 
+        theForm.competitor.boatclass = sailScoreDB._cached.boatclass.find((s) => s.id === parseInt(e.currentTarget.selectedOptions[0].value ));});
+  sel_boat.dispatchEvent(event_input);
+  
+  theForm.querySelector('[name="sailNumber"]').addEventListener('change', (e) => theForm.competitor.sailNumber = e.currentTarget.value);
+  
+  theForm.querySelector('[data-role="save_competitor"]').addEventListener('click', save_competitor);
+  const tcmp = theForm.querySelector('input[name="crew"]');
+  const template = '<li data-id="${c.id}"><i>${c.fullName}</i> <strong>${c.fiv}</strong></li>';
+  const mc = new MultiChoice(tcmp, theForm.competitor.crew, sailScoreDB._cached.sailor, template);
+}
+
+function edit_competitor(e) {
+  competitorSingleton.get(Number(e.currentTarget.getAttribute('data-id')), function(ev){
+    const title = 'Edit Competitor';
+    let s = new Competitor(ev.currentTarget.result);
+     const form = `<form data-role="form-competitor">
+      <div class="field-group">
+        <label>Helm</label> <div class="form-control"><select name="helm"></select></div>
+      </div>
+      <div class="field-group">
+        <label>Crew</label> <div class="form-control"><input type="checkbox" class="mc-toggle" /><input class="multichoice mc-collapse" type="text" name="crew" /></div>
+      </div>
+      <div class="field-group">
+        <label>Sail Number</label> <div class="form-control"><input type="text" name="sailNumber" /></div>
+      </div>
+      <div class="field-group">
+        <label>Boat Class</label> <div class="form-control"><select name="boatClass"></select></div>
+      </div>
+      <div class="form-buttons">
+        <input type="hidden" name="id" />
+        <button type="reset">Reset</button> <button type="button" data-role="save_competitor">Save</button>
+      </div>
+    </form>`;
+    addToPopup(title, form);
+    
+    const theForm = document.querySelector('.popup-fixed form');
+    theForm.competitor = s;
+    const sel_helm = theForm.querySelector('select[name="helm"]');
+    sel_helm.innerHTML = sailScoreDB._cached.sailor.map((s) => `<option value="${s.id}">${s.fullName}</option>` ).join('\n');
+    if(s.helm){
+      sel_helm.dataset.value = JSON.stringify(s.helm);
+      sel_helm.value = s.helm_id;
+    }
+    sel_helm.addEventListener('input', (e) => {
+          const h = e.currentTarget;
+          const hid = h.selectedIndex?parseInt(h.options[h.selectedIndex].value): -1;
+          s.Helm = sailScoreDB._cached.sailor.find((s) => s.id === hid );});
+    sel_helm.dispatchEvent(event_input);
+
+    const sel_boat = theForm.querySelector('select[name="boatClass"]');
+    sel_boat.innerHTML = sailScoreDB._cached.boatclass.map((s) => `<option value="${s.id}">${s.name}</option>` ).join('\n');
+    sel_boat.addEventListener('input', (e) => { 
+          s.boatclass = sailScoreDB._cached.boatclass.find((s) => s.id === parseInt(e.currentTarget.selectedOptions[0].value ));});
+    sel_boat.dispatchEvent(event_input);
+
+    theForm.querySelector('[name="sailNumber"]').addEventListener('change', (e) => s.sailNumber = e.currentTarget.value);
+
+    theForm.querySelector('[data-role="save_competitor"]').addEventListener('click', save_competitor);
+    const tcmp = theForm.querySelector('input[name="crew"]');
+    const template = '<li data-id="${c.id}"><i>${c.fullName}</i> <strong>${c.fiv}</strong></li>';
+    const mc = new MultiChoice(tcmp, theForm.competitor.crew, sailScoreDB._cached.sailor, template);
+    document.querySelector('[data-role="save_competitor"]').addEventListener('click', save_competitor);
+  });
+}
+
+
+function save_competitor(e){
+  const theForm = e.currentTarget.form;
+  competitorSingleton.save(theForm.competitor);
+  competitorSingleton.getAll(showCompetitor);
+  removeFromPopup();
 }
 
 /* POP */
@@ -1258,6 +1630,7 @@ var pop = {
     addToPopup(pop.title, html);
   },
   alert: function(tit='', msg=''){
+    pop.title = tit;
     let html = `<div class="confirm"><div class="confirm-question">${msg}</div></div><div class="popup-buttons center">
         <button type="button" onclick="pop.response(true)"> ok </button>
       </div>`;
@@ -1266,6 +1639,7 @@ var pop = {
    
   },
   notify: function(tit='', msg='', time=1500){
+    pop.title = tit;
     let html = `<div class="confirm"><div class="confirm-question">${msg}</div></div>`;
     addToPopup(pop.title, html);
     setTimeout(removeFromPopup, time);
@@ -1310,7 +1684,7 @@ function show_started_competitors(){
     {name: "Guido Rocchi", sail_number: "209111", boat_class: "ILCA 7"},
     {name: "Max Cinquepalmi", sail_number: "183555", boat_class: "ILCA 7"}
   ];
-  let tag_competitors = document.querySelector('[data-list="competitor"]');
+  let tag_competitors = document.querySelector('[data-list="racing-competitor"]');
   competitors.forEach(c => tag_competitors.insertAdjacentHTML('afterBegin',`
 <div class="competitor" data-status="started"> 
   <button type="button" data-role="pull-top">&#8679;</button> 
@@ -1330,7 +1704,51 @@ function show_started_competitors(){
 }
 show_started_competitors();
 
+/* INSTALL WEB APP */
 
+// Initialize deferredPrompt for use later to show browser install prompt.
+var deferredPrompt;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  // Prevent the mini-infobar from appearing on mobile
+  e.preventDefault();
+  // Stash the event so it can be triggered later.
+  deferredPrompt = e;
+  // Update UI notify the user they can install the PWA
+  
+  // Optionally, send analytics event that PWA install promo was shown.
+  const callback = function(){
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then((choiceResult) => {
+      if (choiceResult.outcome === 'accepted') {
+        console.log('User accepted the A2HS prompt');
+      } else {
+        console.log('User dismissed the A2HS prompt');
+      }
+      deferredPrompt = null;
+    });
+  };
+  const tag_inc = document.querySelector('.install-container');
+  const b = document.createElement('button');
+  b.innerText = 'Install offline version';
+  b.classList.add('btn');
+  b.type = 'button';
+  tag_inc.appendChild(b);
+  b.addEventListener('click', callback);
+  console.log(`'beforeinstallprompt' event was fired.`);
+  //pop.confirm("Install PWA", "Do you want add a Home shortcut?", callback);
+});
+
+
+
+window.addEventListener('appinstalled', () => {
+  // Hide the app-provided install promotion
+  pop.notify("Install PWA", "App installed succesfully");
+  // Clear the deferredPrompt so it can be garbage collected
+  deferredPrompt = null;
+  // Optionally, send analytics event to indicate successful install
+  console.log('PWA was installed');
+});
 
 /* WORKER */
 if ("serviceWorker" in navigator) {

@@ -3,6 +3,7 @@
     <head>
         <title>Sail Score</title>
         <link rel="manifest" href="./app.webmanifest"/>
+        <meta name="theme-color" content="#333333"/>
         <meta name="description" content="Sail Score">
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -29,8 +30,8 @@
               
             </div>
           </div>
-          <div class="container">
-            <h1>Sail Score</h1>
+          <div class="container flex-r-sb">
+            <h1>Sail Score</h1><div class="install-container"></div>
           </div>       
         </header>
         <main data-block="club">
@@ -72,6 +73,7 @@
                       </div>
                   </header>
                     <div class="content" data-list="competitor"></div>
+                    <div class="content" data-list="racing-competitor"></div>
                 </article>
               </div>
         </section>
@@ -109,9 +111,10 @@
               <div class="field-group">
                 <div class="export-buttons">
                   <button type="button" class="btn" onclick="exportAllData()"> Export all data </button>
-                  <button type="button" class="btn" onclick="dropDatabase(true)"> Drop Database </button>
                   <button type="button" class="btn" onclick="importAllData()"> Import all data </button>
                   <button type="button" class="btn" onclick="importPortsmouthYardstick(true)"> Import Portsmouth Yardstick </button>
+                  <button type="button" class="btn" onclick="clearCacheStorage()"> Clear Cache </button>
+                  <button type="button" class="btn" onclick="dropDatabase(true)"> Drop Database </button>
                 </div>
               </div>
           </div>
