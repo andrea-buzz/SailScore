@@ -286,6 +286,23 @@ form .field-group .form-control {
 .field-group select {
   padding: 4px 6px;
 }
+.field-group select option[disabled] {
+  display: none;
+}
+.field-group .search-select {
+  position: absolute;
+  right: 24px;
+  z-index: 1;
+  border: none;
+  opacity: 0;
+  margin: 2px;
+  background-color: rgba(255, 255, 255, .75);
+  cursor: pointer;
+}
+.field-group .search-select:focus {
+  opacity: 1;
+  z-index: -1;
+}
 .field-group input[type="date"] {
   width: auto; 
 }

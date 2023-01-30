@@ -506,8 +506,39 @@ class Regatta extends entity{
 }
 
 class Race extends entity {
-  constructor(b){
-    
+  constructor(b = {}){
+    super(b);
+    this.timeStart = b.timestart;
+    this.timeEnd = b.timeend;
+    this.Competitors = b.competitors;
+  }
+  get scoringcodes(){
+    return [{AP: this.average}, {DSQ: this.dsqscore}, {BFD: this.dsqscore}, {DNS: this.dsqscore}, 
+      {DNC: this.dsqscore}, {DNF: this.dsqscore}, {OCS: this.dsqscore}];
+  }
+  get average(){
+    return Math.ceil( this.competitorscount / 2 );
+  }
+  get dsqscore(){
+    return this.competitorscount + 1;
+  }
+  set timeStart(t) {
+    if ('undefined' === typeof t)return;
+    this.timestart = new Date(t);
+  }
+  set timeEnd(t) {
+    if ('undefined' === typeof t)return;
+    this.timeend = new Date(t);
+  }
+  get nowToLocalTimeZone(){
+    //  non usare
+    let n = new Date(Date.now());
+    //n.setMinutes(n.getMinutes() - n.getTimezoneOffset());
+    return n;
+  }
+  set Competitors( o ){
+    let a = Array.isArray(o)?o.map((i)=> i instanceof Competitor?i: new Competitor(i)):[];
+    this.competitors = a;
   }
 }
 
@@ -865,6 +896,59 @@ function importAllData(){
 }
 
 /* FRONT END CLASSES */
+
+function selectActivateSearch(theForm){
+  theForm.querySelectorAll('.search-select').forEach(function(ss){
+    ss.addEventListener('keyup',(e) =>{
+      const c = e.currentTarget;
+      const s = c.nextSibling;
+      var i = s.selectedIndex;
+      let el;
+      switch(e.keyCode){
+        case 40:
+          el = [...s.options]
+              .find( (o) => o.index > s.selectedIndex && o.innerText.toLowerCase().includes(c.value.toLowerCase()) );
+          if(el){
+            el.selected = true;
+            s.selectedIndex = el.index;
+          }
+          
+          break;
+        case 38:
+          el = [...s.options]
+                  .findLast( (o) => o.index < s.selectedIndex && o.innerText.toLowerCase().includes(c.value.toLowerCase()) );
+          if(el){
+            el.selected = true;
+            s.selectedIndex = el.index;
+          }
+          break;
+        default:
+          if(c.value.length){
+            [...s.options].forEach((o) => { 
+              if( o.innerText.toLowerCase().includes(c.value.toLowerCase()) === false ) { 
+                o.setAttribute('disabled', 'disabled'); 
+              } 
+            });
+            let opt = [...s.options].find((o) => o.innerText.toLowerCase().includes(c.value.toLowerCase()) );
+            if(opt){
+              opt.selected = true;
+              s.selectedIndex = opt.index;
+            }
+          }          
+      }
+    });
+    ss.addEventListener('blur',(e) => {
+      const c = e.currentTarget;
+      const s = c.nextSibling;
+      setTimeout(function(e, c){
+        [...s.options].forEach( (o) => o.removeAttribute('disabled'));
+      }, 5000);
+      c.value = '';
+      s.focus();
+    });
+  });
+}
+
 class MultiChoice{
   constructor(tag, values, availables, template){
     this.Tag = tag;
@@ -1060,12 +1144,22 @@ function renderTable(target, proto = Object, data, useActions = false, fields=nu
 
 /* SAILORS */
 
-function showSailors(e){
+function showSailors(){
   
-  let tag_sailors = document.querySelector('[data-list="sailor"]');
+  const onsuccess = (e) => {
+    let tag_sailors = document.querySelector('[data-list="sailor"]');
+    const fields = [{label:'id', field:'id'}, {label:'Full Name', field:'fullName'}, 
+      {label:'Birth Date', field:'birthDate'}, {label:'FIV n°', field:'fiv'}];
+    renderTable(tag_sailors, Sailor, e.target.result, true, fields);
+  };
+  sailorSingleton.getAll( onsuccess );
+  
+  /*
+   let tag_sailors = document.querySelector('[data-list="sailor"]');
   const fields = [{label:'id', field:'id'}, {label:'Full Name', field:'fullName'}, 
                   {label:'Birth Date', field:'birthDate'}, {label:'FIV n°', field:'fiv'}];
   renderTable(tag_sailors, Sailor, e.target.result, true, fields);
+*/ 
   
   /*
   let tag_sailors = document.querySelector('[data-list="sailor"]');
@@ -1119,7 +1213,7 @@ function add_sailor(e) {
 function delete_sailor(e){
   const sailor_id = Number(e.currentTarget.getAttribute('data-id'));  
   pop.confirm('Delete Sailor', 'Really want delete the record?', function(){
-    sailorSingleton.delete(sailor_id, function(){sailorSingleton.getAll(showSailors);});
+    sailorSingleton.delete(sailor_id, showSailors);
   });
 };
 
@@ -1162,7 +1256,7 @@ function save_sailor(e){
   const sailor = new Sailor();
   sailor._setFromArray = ff;
   sailorSingleton.save(sailor);
-  sailorSingleton.getAll(showSailors);
+  showSailors();
   removeFromPopup();
 }
 
@@ -1177,7 +1271,7 @@ function showBoatClasses(){
   boatClassSingleton.getAll( onsuccess );
 }
 
-showBoatClasses();
+//showBoatClasses();
 document.querySelector('[data-role="add_boatclass"]').addEventListener('click', add_boatclass);
 
 function add_boatclass(e) {
@@ -1235,7 +1329,7 @@ function save_boatclass(e){
   const boatClass = new BoatClass();
   boatClass._setFromArray = ff;
   boatClassSingleton.save(boatClass);
-  boatClassSingleton.getAll(showBoatClasses);
+  showBoatClasses();
   removeFromPopup();
 }
 
@@ -1504,7 +1598,7 @@ function add_competitor(e) {
   const title = 'Add Competitor';
   const form = `<form data-role="form-competitor">
       <div class="field-group">
-        <label>Helm</label> <div class="form-control"><select name="helm"></select></div>
+        <label>Helm</label> <div class="form-control"><input type="text" class="search-select"/><select name="helm"></select></div>
       </div>
       <div class="field-group">
         <label>Crew</label> <div class="form-control"><input type="checkbox" class="mc-toggle" /><input class="multichoice mc-collapse" type="text" name="crew" /></div>
@@ -1526,7 +1620,7 @@ function add_competitor(e) {
 
   const theForm = document.querySelector('.popup-fixed form');
   theForm.competitor = s;
-  
+  selectActivateSearch(theForm);
   const sel_helm = theForm.querySelector('select[name="helm"]');
   sel_helm.innerHTML = sailScoreDB._cached.sailor.sort((a,b) => {return a.fullName === b.fullName?0:( a.fullName>b.fullName?1:-1 );})
           .map((s) => `<option value="${s.id}">${s.fullName}</option>` ).join('\n');
@@ -1562,7 +1656,7 @@ function edit_competitor(e) {
     let s = new Competitor(ev.currentTarget.result);
      const form = `<form data-role="form-competitor">
       <div class="field-group">
-        <label>Helm</label> <div class="form-control"><select name="helm"></select></div>
+        <label>Helm</label> <div class="form-control"><input type="text" class="search-select"/><select name="helm"></select></div>
       </div>
       <div class="field-group">
         <label>Crew</label> <div class="form-control"><input type="checkbox" class="mc-toggle" /><input class="multichoice mc-collapse" type="text" name="crew" /></div>
@@ -1582,7 +1676,8 @@ function edit_competitor(e) {
     
     const theForm = document.querySelector('.popup-fixed form');
     theForm.competitor = s;
-     const sel_helm = theForm.querySelector('select[name="helm"]');
+    selectActivateSearch(theForm);
+    const sel_helm = theForm.querySelector('select[name="helm"]');
   sel_helm.innerHTML = sailScoreDB._cached.sailor.sort((a,b) => {return a.fullName === b.fullName?0:( a.fullName>b.fullName?1:-1 );})
           .map((s) => `<option value="${s.id}">${s.fullName}</option>` ).join('\n');
   sel_helm.addEventListener('input', (e) => {
@@ -1703,7 +1798,7 @@ function removeFromPopup(){
   w.classList.add('hidden');
 }
 
-sailorSingleton.getAll(showSailors);
+//showSailors();
 document.querySelector('[data-role="add_sailor"]').addEventListener('click', add_sailor);
 document.querySelector('#global-nav .toggle-menu').addEventListener('click', (e) => {
   const c = document.querySelector('#global-nav > ul');
