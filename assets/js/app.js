@@ -1475,7 +1475,7 @@ function add_regatta(e) {
     tag_club.dispatchEvent(event_input);
     const tcmp = theForm.querySelector('input[name="competitors"]');
     const template = '<li data-id="${c.id}"><span>${c.helm.fullName}</span> <strong>${c.sailNumber}</strong> <i>${c.boatclass.name}</i></li>';
-    const mc = new MultiChoice(tcmp, theForm.regatta.competitors, sailScoreDB._cached.competitor, template);
+    const mc = new MultiChoice(tcmp, theForm.regatta.Competitors, sailScoreDB._cached.competitor, template);
     
      
      
@@ -1539,7 +1539,7 @@ function edit_regatta(e) {
     tag_club.dispatchEvent(event_input);
     const tcmp = theForm.querySelector('input[name="competitors"]');
     const template = '<li data-id="${c.id}"><span>${c.helm.fullName}</span> <strong>${c.sailNumber}</strong> <i>${c.boatclass.name}</i></li>';
-    const mc = new MultiChoice(tcmp, theForm.regatta.competitors, sailScoreDB._cached.competitor, template);
+    const mc = new MultiChoice(tcmp, theForm.regatta.Competitors, sailScoreDB._cached.competitor, template);
     theForm.querySelector('input[name="competitors"]').dataset = {value: JSON.stringify(s.competitors)};
     
   });
@@ -1569,10 +1569,14 @@ function save_regatta(e){
   if(f_club.dataset.value){
     const c = JSON.parse(f_club.dataset.value);
     regatta.Club = c;
+  }else{
+    regatta.Club = null;
   }
   if(f_competitors.dataset.value){
     const c = JSON.parse(f_competitors.dataset.value);
     regatta.Competitors = c;
+  }else{
+    regatta.Competitors = [];
   }
   regattaSingleton.save(regatta);
   regattaSingleton.getAll(showRegatta);
@@ -1730,6 +1734,8 @@ function save_competitor(e){
   if(f_crew.dataset.value){
     const c = JSON.parse(f_crew.dataset.value);
     competitor.Crew = c;
+  }else{
+    competitor.Crew = [];
   }
   competitorSingleton.save(competitor);
   competitorSingleton.getAll(showCompetitor);
