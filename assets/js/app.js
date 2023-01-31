@@ -969,8 +969,9 @@ class MultiChoice{
     this.tag = (s instanceof HTMLInputElement)? s: null;
   }
   set Values(a){
-    this.values = a;
+    this.values = Array.isArray(a)?a:[];
     this.Checkbox = this.values.length;
+    this.tag.dataset.value=JSON.stringify(this.values);
   }
   set Checkbox(checked){
     const cb = this.tag.parentNode.querySelector('input[type="checkbox"]');
@@ -1027,6 +1028,7 @@ class MultiChoice{
         const id = t.dataset.id;
         t.remove();
         this.ula.querySelector(`[data-id="${id}"].disabled`).classList.remove('disabled');
+        this.setDataset();
       }));
   }
   filter (t){
