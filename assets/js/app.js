@@ -1568,7 +1568,7 @@ function save_regatta(e){
   
   regatta._setFromArray = ff;
   regatta.UsePY = regatta.usePY;
-  if('undefied' !== typeof f_club.dataset.value){
+  if('undefined' !== typeof f_club.dataset.value){
     const c = JSON.parse(f_club.dataset.value);
     regatta.Club = c;
   }else{
