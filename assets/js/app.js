@@ -1572,13 +1572,13 @@ function save_regatta(e){
   
   regatta._setFromArray = ff;
   regatta.UsePY = regatta.usePY;
-  if('undefined' !== typeof f_club.dataset.value){
+  if( /^[\[{].*[}\]]$/.test(f_club.dataset.value) ){
     const c = JSON.parse(f_club.dataset.value);
     regatta.Club = c;
   }else{
     regatta.Club = null;
   }
-  if(f_competitors.dataset.value){
+  if( /^[\[{].*[}\]]$/.test(f_competitors.dataset.value) ){
     const c = JSON.parse(f_competitors.dataset.value);
     regatta.Competitors = c;
   }else{
@@ -1737,7 +1737,7 @@ function save_competitor(e){
   const theForm = e.currentTarget.form;
   const f_crew = theForm.querySelector('[name="crew"]');
   const competitor = theForm.competitor;
-  if(f_crew.dataset.value){
+  if( /^[\[{].*[}\]]$/.test(f_crew.dataset.value) ){
     const c = JSON.parse(f_crew.dataset.value);
     competitor.Crew = c;
   }else{
