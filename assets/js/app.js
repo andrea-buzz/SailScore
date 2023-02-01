@@ -1472,7 +1472,7 @@ function add_regatta(e) {
     tag_club.addEventListener('input', function(e){
           let t = e.currentTarget;
           let club = sailScoreDB._cached.club.find((c) => c.id === parseInt(t.value));
-          if( 'undefined' !== typeof club ){
+          if( club instanceof Club ){
             t.dataset.value = JSON.stringify(club);
           }
       }, { passive: true });
@@ -1538,7 +1538,7 @@ function edit_regatta(e) {
     tag_club.addEventListener('input', function(e){
           let t = e.currentTarget;
           let club = sailScoreDB._cached.club.find((c) => c.id === parseInt(t.value));
-          if( 'undefined' !== typeof club ){
+          if( club instanceof Club ){
             t.dataset.value = JSON.stringify(club);
           }
       }, { passive: true });
