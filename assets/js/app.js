@@ -446,7 +446,7 @@ class Regatta extends entity{
   set Club(c) {
     let o = {};
     try{
-      o = ('string' === typeof c)? JSON.parse(c): c;
+      o = isJSON(c) ? JSON.parse(c): c;
     }
     catch(e){
       console.log(e.message);
@@ -469,7 +469,7 @@ class Regatta extends entity{
       if(Array.isArray(c)){
         o = c.map((i)=> i instanceof Competitor?i: new Competitor(i));
       }else{
-        o = ('string' === typeof c)? JSON.parse(c): c;  
+        o = isJSON(c) ? JSON.parse(c): c;  
       }
     }
     catch(e){
@@ -749,6 +749,10 @@ const sailorSingleton = new SailorSingleton();
 
 
 /* UTILITY FUNCTIONS */
+
+function isJSON(s){
+  return ('string' === typeof s ) && /^[\[{].*[}\]]$/.test( String(s).trim() );
+}
 
 function stripHtml(str){
   switch(typeof str){
@@ -1572,13 +1576,13 @@ function save_regatta(e){
   
   regatta._setFromArray = ff;
   regatta.UsePY = regatta.usePY;
-  if( /^[\[{].*[}\]]$/.test(f_club.dataset.value) ){
+  if( isJSON(f_club.dataset.value) ){
     const c = JSON.parse(f_club.dataset.value);
     regatta.Club = c;
   }else{
     regatta.Club = null;
   }
-  if( /^[\[{].*[}\]]$/.test(f_competitors.dataset.value) ){
+  if( isJSON(f_competitors.dataset.value) ){
     const c = JSON.parse(f_competitors.dataset.value);
     regatta.Competitors = c;
   }else{
@@ -1737,7 +1741,7 @@ function save_competitor(e){
   const theForm = e.currentTarget.form;
   const f_crew = theForm.querySelector('[name="crew"]');
   const competitor = theForm.competitor;
-  if( /^[\[{].*[}\]]$/.test(f_crew.dataset.value) ){
+  if( isJSON(c) ){
     const c = JSON.parse(f_crew.dataset.value);
     competitor.Crew = c;
   }else{
