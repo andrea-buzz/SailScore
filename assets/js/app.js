@@ -1580,7 +1580,7 @@ function save_regatta(e){
     const c = JSON.parse(f_club.dataset.value);
     regatta.Club = c;
   }else{
-    regatta.Club = null;
+    regatta.Club = {};
   }
   if( isJSON(f_competitors.dataset.value) ){
     const c = JSON.parse(f_competitors.dataset.value);
