@@ -1489,6 +1489,7 @@ function add_regatta(e) {
      
      
   document.querySelector('[data-role="save_regatta"]').addEventListener('click', save_regatta);
+  scroll.toElement(theForm);
 }
 competitorSingleton.getAll();
 function edit_regatta(e) {
@@ -1551,7 +1552,7 @@ function edit_regatta(e) {
     const template = '<li data-id="${c.id}"><span>${c.helm.fullName}</span> <strong>${c.sailNumber}</strong> <i>${c.boatclass.name}</i></li>';
     const mc = new MultiChoice(tcmp, theForm.regatta.Competitors, sailScoreDB._cached.competitor, template);
     theForm.querySelector('input[name="competitors"]').dataset = {value: JSON.stringify(s.competitors)};
-    
+    scroll.toElement(theForm);
   });
 }
 
@@ -1816,6 +1817,8 @@ function removeFromPopup(){
 
 //showSailors();
 document.querySelector('[data-role="add_sailor"]').addEventListener('click', add_sailor);
+
+/* NAVBAR */
 document.querySelector('#global-nav .toggle-menu').addEventListener('click', (e) => {
   const c = document.querySelector('#global-nav > ul');
   if(Boolean(c.getAttribute('aria-expanded')) === false){
@@ -1826,7 +1829,30 @@ document.querySelector('#global-nav .toggle-menu').addEventListener('click', (e)
     e.currentTarget.classList.remove('opened');
   }
 });
+const menutop = {onClickSailor:() => { showSailors();scroll.toBlock('sailor');},
+      onClickBoatClass:() => { showBoatClasses();scroll.toBlock('boatclass');}
+  }
 
+
+/* SCROLL TO */
+const scroll = {toElement: (e) => { 
+      if( e instanceof HTMLElement){
+        if(e.scrollIntoView){
+          e.scrollIntoView(true);
+          //e.scrollIntoView({behavior: "smooth", block: "start", inline: "nearest"});
+        }else{
+          let x = e.parentElement.tagName === 'BODY'?e:e.parentElement.parentElement.parentElement;
+          window.scrollTo(x.offsetLeft, x.offsetTop);
+        }
+      }
+    }, 
+  toBlock: (b) => { if('string' === typeof b){
+      scroll.toElement(document.querySelector('[data-block="' + b + '"]'));
+    }
+  }
+};
+
+/* STARTED COMPETITORS */
 function show_started_competitors(){
   let competitors = sailScoreDB._cached.competitor || [
     {HelmFullName: "Lorenzo Serretti", sailNumber: "205262", boat_class: "ILCA 6"},
@@ -1898,7 +1924,7 @@ window.addEventListener('beforeinstallprompt', (e) => {
 
 window.addEventListener('appinstalled', () => {
   // Hide the app-provided install promotion
-  pop.notify("Install PWA", "App installed succesfully");
+  pop.notify("Install PWA", "SailScore installation in progress...");
   // Clear the deferredPrompt so it can be garbage collected
   deferredPrompt = null;
   // Optionally, send analytics event to indicate successful install
