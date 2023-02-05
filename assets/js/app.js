@@ -1829,8 +1829,16 @@ document.querySelector('#global-nav .toggle-menu').addEventListener('click', (e)
     e.currentTarget.classList.remove('opened');
   }
 });
-const menutop = {onClickSailor:() => { showSailors();scroll.toBlock('sailor');},
-      onClickBoatClass:() => { showBoatClasses();scroll.toBlock('boatclass');}
+function closeNavbar(){
+  const tm = document.querySelector('#global-nav .toggle-menu');
+  const c = document.querySelector('#global-nav > ul');
+  if(Boolean(c.getAttribute('aria-expanded')) === true){
+    c.setAttribute('aria-expanded', '');
+    tm.classList.remove('opened');
+  }
+}
+const menutop = {onClickSailor:() => { showSailors();scroll.toBlock('sailor');closeNavbar();},
+      onClickBoatClass:() => { showBoatClasses();scroll.toBlock('boatclass');closeNavbar();}
   }
 
 

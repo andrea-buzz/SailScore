@@ -548,7 +548,8 @@ form .field-group .form-control {
   cursor: pointer;
   width: 100%;
   display: block;
-  margin-bottom: .6rem
+  margin-bottom: .6rem;
+  user-select: none;
 }
 .flex-r-sb {
   display: flex;
