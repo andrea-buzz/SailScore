@@ -1492,7 +1492,7 @@ function add_regatta(e) {
     });
     tag_club.addEventListener('input', function(e){
           let t = e.currentTarget;
-          let club = theForm._cached.club.find((c) => c.id === parseInt(t.value));
+          let club = theForm._cached_club.find((c) => c.id === parseInt(t.value));
           if( club instanceof Club ){
             theForm.regatta.Club = club;
             t.dataset.value = JSON.stringify(club);
@@ -1504,7 +1504,7 @@ function add_regatta(e) {
     competitorSingleton.getAll((e) => {
       const cr = e.target.result.map((c) => { return new Competitor(c);});
       theForm._cached_competitor = cr;
-      const mc = new MultiChoice(tcmp, theForm.regatta.Competitors, theForm._cached.competitor, template);
+      const mc = new MultiChoice(tcmp, theForm.regatta.Competitors, theForm._cached_competitor, template);
     });
      
   document.querySelector('[data-role="save_regatta"]').addEventListener('click', save_regatta);
@@ -1700,9 +1700,9 @@ function add_competitor(e) {
   
   sel_boat.addEventListener('input', (e) => { 
         let t = e.currentTarget;
-        let boat = sailScoreDB._cached.boatclass.find((s) => s.id === parseInt(t.value ));
-        t.dataset.value = JSON.stringify(boat);
+        let boat = t.form._cached_boatclass.find((s) => s.id === parseInt(t.value ));
         s.boatclass = boat;
+        t.dataset.value = JSON.stringify(boat);
       });
   //sel_boat.dispatchEvent(event_input);
   
@@ -1782,7 +1782,6 @@ function edit_competitor(e) {
         let boat = t.form._cached_boatclass.find((s) => s.id === parseInt(t.value ));
         t.form.competitor.boatclass = boat;
         t.dataset.value = JSON.stringify(boat);
-        
       });
   //sel_boat.value = s.boatclass?s.boatclass.id:null;
   //sel_boat.dispatchEvent(event_input);
@@ -1801,8 +1800,6 @@ function edit_competitor(e) {
               .sort((a,b) => {return a.fullName === b.fullName?0:( a.fullName>b.fullName?1:-1 );});
         const mc = new MultiChoice(tcmp, theForm.competitor.Crew, rc, template);
       });
-    
-    
     document.querySelector('[data-role="save_competitor"]').addEventListener('click', save_competitor);
   });
 }
