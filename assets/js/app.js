@@ -15,7 +15,7 @@ class SailScoreDB {
     objList.forEach( (o) => actionList.forEach( (a) => this.eventList.push('on' + o + a) ) );
     this.events = {};
     this.eventList.forEach((i) => this.events[i] = new Event(i, {"bubbles":true, "cancelable":false} ));
-    this.renewAllCached();
+    //this.renewAllCached();
     return this;
   }
   
@@ -121,7 +121,7 @@ class SailScoreDB {
       if(fn){
         //rr.onsuccess = fn;
       }
-      //this.renewCached(osName);
+      
       //document.dispatchEvent( sailScoreDB.events['on' + osName + 'Save'] );
     };
   }
@@ -140,7 +140,7 @@ class SailScoreDB {
       if(fn){
         q.onsuccess = fn;
       }
-      this.renewCached(osName);
+      //this.renewCached(osName);
       document.dispatchEvent( sailScoreDB.events['on' + osName + 'Save'] );
     };
   }
@@ -158,7 +158,7 @@ class SailScoreDB {
       if(fn){
         q.onsuccess = fn;
       }
-      this.renewCached(osName);
+      //this.renewCached(osName);
       document.dispatchEvent( sailScoreDB.events['on' + osName + 'Delete'] );
     };
   }
@@ -893,7 +893,7 @@ function importAllData(){
       } );
   }
   function notifyEnd(){
-    sailScoreDB.renewAllCached();
+    //sailScoreDB.renewAllCached();
     pop.notify('Import all data', 'Import succesfully done!');
     
   }
@@ -1214,6 +1214,11 @@ function add_sailor(e) {
     </form>`;
   
   addToPopup(title, form);
+  const theForm = document.querySelector('.popup-fixed form');
+  theForm.sailor = new Sailor();
+  theForm.querySelector('[name="gender"]').addEventListener('input', (e) => {
+    theForm.sailor.gender = e.currentTarget.value;
+  });
   document.querySelector('[data-role="save_sailor"]').addEventListener('click', save_sailor);
 }
 function delete_sailor(e){
@@ -1252,14 +1257,20 @@ function edit_sailor(e) {
       </div>
     </form>`;
     addToPopup(title, form);
+    const theForm = document.querySelector('.popup-fixed form');
+    theForm.sailor = s;
+    theForm.querySelector('[name="gender"]').addEventListener('input', (e) => {
+      theForm.sailor.gender = e.currentTarget.value;
+    });
     document.querySelector('[data-role="save_sailor"]').addEventListener('click', save_sailor);
   });
 }
 
 function save_sailor(e){
+  const theForm = e.currentTarget.form;
   const fields = e.currentTarget.parentElement.parentElement.querySelectorAll('input[name]');
   const ff = [...fields].map(f => ({name: f.name, value: f.value}));
-  const sailor = new Sailor();
+  const sailor = theForm.sailor;  //  new Sailor();
   sailor._setFromArray = ff;
   sailorSingleton.save(sailor);
   showSailors();
@@ -1468,25 +1479,33 @@ function add_regatta(e) {
     const fc = document.querySelector('[data-block="regatta"] [data-role="form-container"]');
     fc.insertAdjacentHTML('beforeEnd', form);
     const theForm = fc.querySelector('form:last-child');
+    
     theForm.regatta = new Regatta();
     theForm.querySelector('button[type="reset"]')
             .addEventListener('click', (e) => theForm.remove());
     const tag_club = document.querySelector('form[data-role="form-regatta"] select[name="club"]');
-    tag_club.innerHTML = sailScoreDB._cached.club.map((s) => `<option value="${s.id}">${s.name}</option>` ).join('');
+    clubSingleton.getAll((e)=>{
+      const cr = e.target.result.map((c) => { return new Club(c);});
+      tag_club.innerHTML = cr.map((s) => `<option value="${s.id}">${s.name}</option>` ).join('');
+      console.log(theForm);
+      theForm._cached_club = cr;
+    });
     tag_club.addEventListener('input', function(e){
           let t = e.currentTarget;
-          let club = sailScoreDB._cached.club.find((c) => c.id === parseInt(t.value));
+          let club = theForm._cached.club.find((c) => c.id === parseInt(t.value));
           if( club instanceof Club ){
+            theForm.regatta.Club = club;
             t.dataset.value = JSON.stringify(club);
           }
       }, { passive: true });
-    tag_club.dispatchEvent(event_input);
+    //  tag_club.dispatchEvent(event_input);
     const tcmp = theForm.querySelector('input[name="competitors"]');
     const template = '<li data-id="${c.id}"><span>${c.helm.fullName}</span> <strong>${c.sailNumber}</strong> <i>${c.boatclass.name}</i></li>';
-    const mc = new MultiChoice(tcmp, theForm.regatta.Competitors, sailScoreDB._cached.competitor, template);
-    
-     
-     
+    competitorSingleton.getAll((e) => {
+      const cr = e.target.result.map((c) => { return new Competitor(c);});
+      theForm._cached_competitor = cr;
+      const mc = new MultiChoice(tcmp, theForm.regatta.Competitors, theForm._cached.competitor, template);
+    });
      
   document.querySelector('[data-role="save_regatta"]').addEventListener('click', save_regatta);
   scroll.toElement(theForm);
@@ -1538,19 +1557,34 @@ function edit_regatta(e) {
     theForm.regatta = s;
     const tag_club = theForm.querySelector('select[name="club"]');
     tag_club.dataset.value = JSON.stringify(s.Club);
-    tag_club.innerHTML = sailScoreDB._cached.club.map((s) => `<option value="${s.id}">${s.name}</option>` ).join('');
+    
+    clubSingleton.getAll((e)=>{
+      const cr = e.target.result.map((c) => { return new Club(c);});
+      tag_club.innerHTML = cr.map((s) => {
+          const selected = s.id === theForm.regatta.Club.id?' selected="selected"':'';
+          return `<option value="${s.id}"${selected}>${s.name}</option>`; 
+        } ).join('');
+      tag_club.form._cached_club = cr;
+    });
+    
     tag_club.value = s.Club.id;
     tag_club.addEventListener('input', function(e){
           let t = e.currentTarget;
-          let club = sailScoreDB._cached.club.find((c) => c.id === parseInt(t.value));
+          let club = theForm._cached_club.find((c) => c.id === parseInt(t.value));
           if( club instanceof Club ){
+            theForm.regatta.Club = club;
             t.dataset.value = JSON.stringify(club);
           }
       }, { passive: true });
-    tag_club.dispatchEvent(event_input);
+    //  tag_club.dispatchEvent(event_input);
     const tcmp = theForm.querySelector('input[name="competitors"]');
     const template = '<li data-id="${c.id}"><span>${c.helm.fullName}</span> <strong>${c.sailNumber}</strong> <i>${c.boatclass.name}</i></li>';
-    const mc = new MultiChoice(tcmp, theForm.regatta.Competitors, sailScoreDB._cached.competitor, template);
+    competitorSingleton.getAll((e) => {
+      const cr = e.target.result.map((c) => { return new Competitor(c);});
+      theForm._cached_competitor = cr;
+      const mc = new MultiChoice(tcmp, theForm.regatta.Competitors, theForm._cached_competitor, template);
+    });
+    
     theForm.querySelector('input[name="competitors"]').dataset = {value: JSON.stringify(s.competitors)};
     scroll.toElement(theForm);
   });
@@ -1637,32 +1671,51 @@ function add_competitor(e) {
   theForm.competitor = s;
   selectActivateSearch(theForm);
   const sel_helm = theForm.querySelector('select[name="helm"]');
-  sel_helm.innerHTML = sailScoreDB._cached.sailor.sort((a,b) => {return a.fullName === b.fullName?0:( a.fullName>b.fullName?1:-1 );})
-          .map((s) => `<option value="${s.id}">${s.fullName}</option>` ).join('\n');
+  sailorSingleton.getAll((e) => {
+    const rc = e.target.result.map((c) => {return new Sailor(c);} );
+    sel_helm.innerHTML = rc.sort((a,b) => {return a.fullName === b.fullName?0:( a.fullName>b.fullName?1:-1 );})
+          .map((s) => {
+            return `<option value="${s.id}">${s.fullName}</option>`;
+          } ).join('\n');
+    sel_helm.form._cached_sailor = rc;
+  });
+  
   sel_helm.addEventListener('input', (e) => {
         let t = e.currentTarget;
-        let helm = sailScoreDB._cached.sailor.find( (s) => s.id === parseInt(t.value ));
+        let helm = t.form._cached_sailor.find( (s) => s.id === parseInt(t.value ));
+        t.form.Competitor.Helm = helm;
         t.dataset.value = JSON.stringify(helm);
-        s.Helm = helm;
       }, { passive: true });
-  sel_helm.dispatchEvent(event_input);
+  //  sel_helm.dispatchEvent(event_input);
   
   const sel_boat = theForm.querySelector('select[name="boatClass"]');
-  sel_boat.innerHTML = sailScoreDB._cached.boatclass.map((s) => `<option value="${s.id}">${s.name}</option>` ).join('\n');
+  boatClassSingleton.getAll((e) => {
+      const rc = e.target.result.map((c) => {return new BoatClass(c);} );
+      sel_boat.innerHTML = rc.sort((a,b) => {return a.name === b.name?0:( a.name>b.name?1:-1 );})
+          .map((s) => {
+            return `<option value="${s.id}">${s.name}</option>`;
+          } ).join('\n');
+        sel_helm.form._cached_boatclass = rc;
+      });
+  
   sel_boat.addEventListener('input', (e) => { 
         let t = e.currentTarget;
         let boat = sailScoreDB._cached.boatclass.find((s) => s.id === parseInt(t.value ));
         t.dataset.value = JSON.stringify(boat);
         s.boatclass = boat;
       });
-  sel_boat.dispatchEvent(event_input);
+  //sel_boat.dispatchEvent(event_input);
   
   theForm.querySelector('[name="sailNumber"]').addEventListener('change', (e) => theForm.competitor.sailNumber = e.currentTarget.value);
   
   theForm.querySelector('[data-role="save_competitor"]').addEventListener('click', save_competitor);
   const tcmp = theForm.querySelector('input[name="crew"]');
   const template = '<li data-id="${c.id}"><i>${c.fullName}</i> <strong>${c.fiv}</strong></li>';
-  const mc = new MultiChoice(tcmp, theForm.competitor.Crew, sailScoreDB._cached.sailor, template);
+  sailorSingleton.getAll((e) => {
+        const rc = e.target.result.map((c) => {return new Sailor(c);} )
+              .sort((a,b) => {return a.fullName === b.fullName?0:( a.fullName>b.fullName?1:-1 );});
+        const mc = new MultiChoice(tcmp, theForm.competitor.Crew, rc, template);
+      });
 }
 
 function edit_competitor(e) {
@@ -1693,37 +1746,63 @@ function edit_competitor(e) {
     theForm.competitor = s;
     selectActivateSearch(theForm);
     const sel_helm = theForm.querySelector('select[name="helm"]');
-  sel_helm.innerHTML = sailScoreDB._cached.sailor.sort((a,b) => {return a.fullName === b.fullName?0:( a.fullName>b.fullName?1:-1 );})
-          .map((s) => `<option value="${s.id}">${s.fullName}</option>` ).join('\n');
-  sel_helm.addEventListener('input', (e) => {
+    sailorSingleton.getAll((e) => {
+      const rc = e.target.result.map((c) => {return new Sailor(c);} );
+      sel_helm.innerHTML = rc.sort((a,b) => {return a.fullName === b.fullName?0:( a.fullName>b.fullName?1:-1 );})
+          .map((s) => {
+            const selected = s.id === sel_helm.form.competitor.Helm.id?' selected="selected"':'';
+            return `<option value="${s.id}"${selected}>${s.fullName}</option>`;
+          } ).join('\n');
+        sel_helm.form._cached_sailor = rc;
+      });
+    sel_helm.addEventListener('input', (e) => {
         let t = e.currentTarget;
-        let helm = sailScoreDB._cached.sailor.find( (s) => s.id === parseInt(t.value ));
+        let helm = t.form._cached_sailor.find( (s) => s.id === parseInt(t.value ));
         t.dataset.value = JSON.stringify(helm);
         s.Helm = helm;
       }, { passive: true });
-  sel_helm.value = s.Helm?s.Helm.id:null;
-  sel_helm.dispatchEvent(event_input);
+    sel_helm.value = s.Helm?s.Helm.id:null;
+    //  sel_helm.dispatchEvent(event_input);
   
-  const sel_boat = theForm.querySelector('select[name="boatClass"]');
-  sel_boat.innerHTML = sailScoreDB._cached.boatclass.map((s) => `<option value="${s.id}">${s.name}</option>` ).join('\n');
+    const sel_boat = theForm.querySelector('select[name="boatClass"]');
+    boatClassSingleton.getAll((e) => {
+        const rc = e.target.result.map((c) => {return new BoatClass(c);} );
+        sel_boat.innerHTML = rc.map((s) => {
+              const selected = s.id === sel_boat.form.competitor.boatclass.id?' selected="selected"':'';
+              return `<option value="${s.id}"${selected}>${s.name}</option>`;
+            } ).join('\n');
+          sel_helm.form._cached_boatclass = rc;
+        });
+  
+  
+  
+  
   sel_boat.addEventListener('input', (e) => { 
         let t = e.currentTarget;
-        let boat = sailScoreDB._cached.boatclass.find((s) => s.id === parseInt(t.value ));
+        let boat = t.form._cached_boatclass.find((s) => s.id === parseInt(t.value ));
+        t.form.competitor.boatclass = boat;
         t.dataset.value = JSON.stringify(boat);
-        s.boatclass = boat;
+        
       });
-  sel_boat.value = s.boatclass?s.boatclass.id:null;
-  sel_boat.dispatchEvent(event_input);
+  //sel_boat.value = s.boatclass?s.boatclass.id:null;
+  //sel_boat.dispatchEvent(event_input);
     
     
-    sel_boat.dispatchEvent(event_input);
+    //sel_boat.dispatchEvent(event_input);
 
     theForm.querySelector('[name="sailNumber"]').addEventListener('change', (e) => s.sailNumber = e.currentTarget.value);
 
     theForm.querySelector('[data-role="save_competitor"]').addEventListener('click', save_competitor);
     const tcmp = theForm.querySelector('input[name="crew"]');
     const template = '<li data-id="${c.id}"><i>${c.fullName}</i> <strong>${c.fiv}</strong></li>';
-    const mc = new MultiChoice(tcmp, theForm.competitor.Crew, sailScoreDB._cached.sailor, template);
+    
+    sailorSingleton.getAll((e) => {
+        const rc = e.target.result.map((c) => {return new Sailor(c);} )
+              .sort((a,b) => {return a.fullName === b.fullName?0:( a.fullName>b.fullName?1:-1 );});
+        const mc = new MultiChoice(tcmp, theForm.competitor.Crew, rc, template);
+      });
+    
+    
     document.querySelector('[data-role="save_competitor"]').addEventListener('click', save_competitor);
   });
 }
@@ -1742,7 +1821,7 @@ function save_competitor(e){
   const theForm = e.currentTarget.form;
   const f_crew = theForm.querySelector('[name="crew"]');
   const competitor = theForm.competitor;
-  if( isJSON(c) ){
+  if( isJSON( f_crew.dataset.value ) ){
     const c = JSON.parse(f_crew.dataset.value);
     competitor.Crew = c;
   }else{
