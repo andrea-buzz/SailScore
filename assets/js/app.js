@@ -1937,20 +1937,22 @@ const scroll = {toElement: (e) => {
 };
 
 /* STARTED COMPETITORS */
-function show_started_competitors(){
-  let competitors = sailScoreDB._cached.competitor || [
-    {HelmFullName: "Lorenzo Serretti", sailNumber: "205262", boat_class: "ILCA 6"},
-    {HelmFullName: "Giovanna Pagnini", sailNumber: "197000", boat_class: "ILCA 6"},
-    {HelmFullName: "Gaia Cinquepalmi", sailNumber: "210505", boat_class: "ILCA 6"},
-    {HelmFullName: "Danilo Monticelli", sailNumber: "210000", boat_class: "ILCA 7"},
-    {HelmFullName: "Stefano Melone", sailNumber: "218765", boat_class: "ILCA 7"},
-    {HelmFullName: "Andrea Bazzani", sailNumber: "219081", boat_class: "ILCA 7"},
-    {HelmFullName: "Francesca Carlotti", sailNumber: "180321", boat_class: "ILCA 6"},
-    {HelmFullName: "Guido Rocchi", sailNumber: "209111", boat_class: "ILCA 7"},
-    {HelmFullName: "Max Cinquepalmi", sailNumber: "183555", boat_class: "ILCA 7"}
+function ShowStartedCompetitors(cs){
+  let competitors = cs || [
+    {HelmFullName: "Lorenzo Serretti", sailNumber: "205262", Boat: "ILCA 6", boatclass:{ranking:1147}},
+    {HelmFullName: "Giovanna Pagnini", sailNumber: "197000", Boat: "ILCA 6", boatclass:{ranking:1147}},
+    {HelmFullName: "Gaia Cinquepalmi", sailNumber: "210505", Boat: "ILCA 6", boatclass:{ranking:1147}},
+    {HelmFullName: "Danilo Monticelli", sailNumber: "210000", Boat: "ILCA 7", boatclass:{ranking:1099}},
+    {HelmFullName: "Stefano Melone", sailNumber: "218765", Boat: "ILCA 7", boatclass:{ranking:1099}},
+    {HelmFullName: "Andrea Bazzani", sailNumber: "219081", Boat: "ILCA 7", boatclass:{ranking:1099}},
+    {HelmFullName: "Francesca Carlotti", sailNumber: "180321", Boat: "ILCA 6", boatclass:{ranking:1147}},
+    {HelmFullName: "Guido Rocchi", sailNumber: "209111", Boat: "ILCA 7", boatclass:{ranking:1099}},
+    {HelmFullName: "Max Cinquepalmi", sailNumber: "183555", Boat: "ILCA 7", boatclass:{ranking:1099}}
   ];
   let tag_competitors = document.querySelector('[data-list="racing-competitor"]');
-  competitors.forEach(c => tag_competitors.insertAdjacentHTML('afterBegin',`
+      tag_competitors.innerHTML = '';
+      competitors.sort((a, b) => a.boatclass.ranking < b.boatclass.ranking?1:-1)
+      .forEach(c => tag_competitors.insertAdjacentHTML('afterBegin',`
 <div class="competitor" data-status="started"> 
   <button type="button" data-role="pull-top">&#8679;</button> 
   <span class="crew">${c.HelmFullName}</span> 
@@ -1967,7 +1969,7 @@ function show_started_competitors(){
     setTimeout(function(){c.classList.remove('pulled-top');}, 1000);
   }
 }
-setTimeout(show_started_competitors, 300);
+setTimeout(ShowStartedCompetitors, 300);
 
 /* INSTALL WEB APP */
 
