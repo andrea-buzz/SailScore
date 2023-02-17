@@ -511,6 +511,7 @@ class Race extends entity {
     this.timeStart = b.timestart;
     this.timeEnd = b.timeend;
     this.Competitors = b.competitors;
+    
   }
   get scoringcodes(){
     return [{AP: this.average}, {DSQ: this.dsqscore}, {BFD: this.dsqscore}, {DNS: this.dsqscore}, 
@@ -539,6 +540,7 @@ class Race extends entity {
   set Competitors( o ){
     let a = Array.isArray(o)?o.map((i)=> i instanceof Competitor?i: new Competitor(i)):[];
     this.competitors = a;
+    this.competitorscount = a.length;
   }
 }
 
@@ -573,8 +575,6 @@ class ClubSingleton{
   getAll( fn = null ){
     const iDBObjectName = this.osName();
     const onsuccess = (e) => {
-    //sailScoreDB.club = e.target.result.map((b) => new Club(b));
-      
       if(fn){
         fn(e);
       }
