@@ -192,6 +192,11 @@ div[data-list="racing-competitor"] .competitor span.crew{
 button[data-role] {
   min-width: 32px;
   min-height: 32px;
+  border: solid 1px #bbb;
+  border-radius: 2px;
+}
+button[data-role]:hover{
+  border-style: outset;
 }
 button[data-role] + button[data-role] {
   margin-left: 10px;
@@ -281,6 +286,23 @@ form .field-group .form-control {
 .field-group select {
   padding: 4px 6px;
 }
+.field-group select option[disabled] {
+  display: none;
+}
+.field-group .search-select {
+  position: absolute;
+  right: 24px;
+  z-index: 1;
+  border: none;
+  opacity: 0;
+  margin: 2px;
+  background-color: rgba(255, 255, 255, .75);
+  cursor: pointer;
+}
+.field-group .search-select:focus {
+  opacity: 1;
+  z-index: -1;
+}
 .field-group input[type="date"] {
   width: auto; 
 }
@@ -294,6 +316,9 @@ form .field-group .form-control {
 }
 .field-group .wrap-multichoice ul, .field-group .multichoice {
   position: relative;
+}
+.field-group .wrap-multichoice ul > li > :first-child {
+  flex-grow: 1;
 }
 .field-group ul.avail, .field-group ul.included {
   display: flex;
@@ -314,6 +339,7 @@ form .field-group .form-control {
   margin:0 0 6px 0;
   display: flex;
   justify-content: space-between;
+  column-gap: 1rem;
   user-select: none;
 }
 .field-group .avail > li {
@@ -334,6 +360,7 @@ form .field-group .form-control {
   margin:0 0 6px 0;
   display: flex;
   justify-content: space-between;
+  column-gap: 1rem;
   border:1px solid #aaa;
   border-radius:12px;
   position:relative;
@@ -521,7 +548,8 @@ form .field-group .form-control {
   cursor: pointer;
   width: 100%;
   display: block;
-  margin-bottom: .6rem
+  margin-bottom: .6rem;
+  user-select: none;
 }
 .flex-r-sb {
   display: flex;
